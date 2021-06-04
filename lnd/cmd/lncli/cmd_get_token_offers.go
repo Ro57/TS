@@ -1,7 +1,10 @@
 package main
 
 import (
+	"context"
+
 	"github.com/pkt-cash/pktd/btcutil/er"
+	"github.com/pkt-cash/pktd/lnd/lnrpc/replication_server"
 	"github.com/urfave/cli"
 )
 
@@ -39,33 +42,33 @@ func getTokenOffers(ctx *cli.Context) er.R {
 	defer cleanUp()
 
 	var ( // Default request parameters - no pagination
-		limit    uint
-		offset   uint
+		limit    uint64
+		offset   uint64
 		issuerID string
 	)
 
 	// Acquire passed values, that are not zero
-	if v := ctx.Uint("limit"); v != 0 {
+	if v := ctx.Uint64("limit"); v != 0 {
 		limit = v
 	}
-	if v := ctx.Uint("offset"); v != 0 {
+	if v := ctx.Uint64("offset"); v != 0 {
 		offset = v
 	}
 	if v := ctx.String("issuer-id"); v != "" {
 		issuerID = v
 	}
 
-	// TODO: make request; implement gRPC
-	_ = limit
-	_ = offset
-	_ = issuerID
-
-	// TODO: call LND; implement gRPC
-	// client.GetTokenOffers()
-	_ = client
-
-	// TODO: print response
-	printRespJSON(nil)
+	// Request offers
+	req := &replication_server.GetTokenOffersRequest{
+		IssuerId: issuerID,
+		Limit:    limit,
+		Offset:   offset,
+	}
+	resp, err := client.GetTokenOffers(context.TODO(), req)
+	if err != nil {
+		return er.E(err)
+	}
+	printRespJSON(resp)
 
 	return nil
 }
