@@ -46,6 +46,7 @@ import (
 	"github.com/pkt-cash/pktd/lnd/lncfg"
 	"github.com/pkt-cash/pktd/lnd/lnrpc"
 	"github.com/pkt-cash/pktd/lnd/lnrpc/invoicesrpc"
+	"github.com/pkt-cash/pktd/lnd/lnrpc/replication_server"
 	"github.com/pkt-cash/pktd/lnd/lnrpc/routerrpc"
 	"github.com/pkt-cash/pktd/lnd/lntypes"
 	"github.com/pkt-cash/pktd/lnd/lnwallet"
@@ -6841,4 +6842,16 @@ func (r *rpcServer) FundingStateStep0(ctx context.Context,
 	// TODO(roasbeef): return resulting state? also add a method to query
 	// current state?
 	return &lnrpc.FundingStateStepResp{}, nil
+}
+
+func (r *rpcServer) GetTokenOffers(ctx context.Context, req *replication_server.GetTokenOffersRequest) (*replication_server.GetTokenOffersResponse, error) {
+	resp := &replication_server.GetTokenOffersResponse{
+		Offers: []*replication_server.TokenOffer{
+			{IssuerId: "TODO: implement method", Token: "TODO: implement method", Price: 10},
+			{IssuerId: "issuer_1", Token: "issuer_1_token", Price: 10},
+			{IssuerId: "issuer_2", Token: "issuer_2_token", Price: 100},
+			{IssuerId: "issuer_3", Token: "issuer_3_token", Price: 1000},
+		},
+	}
+	return resp, nil
 }

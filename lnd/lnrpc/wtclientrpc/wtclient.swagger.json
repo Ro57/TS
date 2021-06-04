@@ -14,7 +14,7 @@
     "/v2/watchtower/client": {
       "get": {
         "summary": "ListTowers returns the list of watchtowers registered with the client.",
-        "operationId": "WatchtowerClient_ListTowers",
+        "operationId": "ListTowers",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -23,7 +23,7 @@
             }
           },
           "default": {
-            "description": "An unexpected error response.",
+            "description": "An unexpected error response",
             "schema": {
               "$ref": "#/definitions/runtimeError"
             }
@@ -35,7 +35,8 @@
             "description": "Whether we should include sessions with the watchtower in the response.",
             "in": "query",
             "required": false,
-            "type": "boolean"
+            "type": "boolean",
+            "format": "boolean"
           }
         ],
         "tags": [
@@ -44,7 +45,7 @@
       },
       "post": {
         "summary": "AddTower adds a new watchtower reachable at the given address and\nconsiders it for new sessions. If the watchtower already exists, then\nany new addresses included will be considered when dialing it for\nsession negotiations and backups.",
-        "operationId": "WatchtowerClient_AddTower",
+        "operationId": "AddTower",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -53,7 +54,7 @@
             }
           },
           "default": {
-            "description": "An unexpected error response.",
+            "description": "An unexpected error response",
             "schema": {
               "$ref": "#/definitions/runtimeError"
             }
@@ -77,7 +78,7 @@
     "/v2/watchtower/client/info/{pubkey}": {
       "get": {
         "summary": "GetTowerInfo retrieves information for a registered watchtower.",
-        "operationId": "WatchtowerClient_GetTowerInfo",
+        "operationId": "GetTowerInfo",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -86,7 +87,7 @@
             }
           },
           "default": {
-            "description": "An unexpected error response.",
+            "description": "An unexpected error response",
             "schema": {
               "$ref": "#/definitions/runtimeError"
             }
@@ -106,7 +107,8 @@
             "description": "Whether we should include sessions with the watchtower in the response.",
             "in": "query",
             "required": false,
-            "type": "boolean"
+            "type": "boolean",
+            "format": "boolean"
           }
         ],
         "tags": [
@@ -117,7 +119,7 @@
     "/v2/watchtower/client/policy": {
       "get": {
         "summary": "Policy returns the active watchtower client policy configuration.",
-        "operationId": "WatchtowerClient_Policy",
+        "operationId": "Policy",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -126,7 +128,7 @@
             }
           },
           "default": {
-            "description": "An unexpected error response.",
+            "description": "An unexpected error response",
             "schema": {
               "$ref": "#/definitions/runtimeError"
             }
@@ -140,7 +142,7 @@
     "/v2/watchtower/client/stats": {
       "get": {
         "summary": "Stats returns the in-memory statistics of the client since startup.",
-        "operationId": "WatchtowerClient_Stats",
+        "operationId": "Stats",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -149,7 +151,7 @@
             }
           },
           "default": {
-            "description": "An unexpected error response.",
+            "description": "An unexpected error response",
             "schema": {
               "$ref": "#/definitions/runtimeError"
             }
@@ -163,7 +165,7 @@
     "/v2/watchtower/client/{pubkey}": {
       "delete": {
         "summary": "RemoveTower removes a watchtower from being considered for future session\nnegotiations and from being used for any subsequent backups until it's added\nagain. If an address is provided, then this RPC only serves as a way of\nremoving the address from the watchtower instead.",
-        "operationId": "WatchtowerClient_RemoveTower",
+        "operationId": "RemoveTower",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -172,7 +174,7 @@
             }
           },
           "default": {
-            "description": "An unexpected error response.",
+            "description": "An unexpected error response",
             "schema": {
               "$ref": "#/definitions/runtimeError"
             }
@@ -329,6 +331,7 @@
         },
         "active_session_candidate": {
           "type": "boolean",
+          "format": "boolean",
           "description": "Whether the watchtower is currently a candidate for new sessions."
         },
         "num_sessions": {
