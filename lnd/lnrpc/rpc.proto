@@ -4,6 +4,8 @@ package lnrpc;
 
 option go_package = "github.com/pkt-cash/pktd/lnd/lnrpc";
 
+import "replication_server/replication_server.proto";
+
 /*
  * Comments in this file will be directly parsed into the API
  * Documentation as descriptions of the associated method, message, or field.
@@ -519,6 +521,12 @@ service Lightning {
     */
     rpc ListPermissions (ListPermissionsRequest)
         returns (ListPermissionsResponse);
+
+    
+    /* lncli: `gettokenoffers`
+        List available token offers.
+    */
+    rpc GetTokenOffers(GetTokenOffersRequest) returns (GetTokenOffersResponse);
 }
 
 message Utxo {
