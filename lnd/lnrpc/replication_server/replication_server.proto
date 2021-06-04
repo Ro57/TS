@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package lnrpc;
+
+option go_package = "github.com/pkt-cash/pktd/lnd/lnrpc/replication_server";
+
+// Is mainly used to generate compatible ReplicationServer querier (client)
+//
+// Generated client can be used to serve two main purposes:
+//  - to interact with ReplicationServer via generated client
+//  - to test generated client implementation by mocking generated ReplicationServer server
+//
+service ReplicationServer {
+    // Returns available token offers
+    rpc GetTokenOffers(GetTokenOffersRequest) returns (GetTokenOffersResponse);
+}
+
+message GetTokenOffersRequest {
+    string issuer_id = 1;
+    uint64 limit = 2;
+    uint64 offset = 3;
+}
+
+message GetTokenOffersResponse {
+    repeated TokenOffer offers = 1;
+    uint64 total = 2;
+}
+
+message TokenOffer {
+    string issuer_id = 1;
+    string token = 2;
+
+    // TODO: discuss. Should we assume decimal prices?
+    uint64 price = 3;
+}
