@@ -472,6 +472,12 @@ func MainRPCServerPermissions() map[string][]bakery.Op {
 			Entity: "offchain",
 			Action: "write",
 		}},
+		"/lnrpc.Lightning/GetTokenOffers": {
+			{
+				Entity: "info",
+				Action: "read",
+			},
+		},
 	}
 }
 
@@ -6847,11 +6853,16 @@ func (r *rpcServer) FundingStateStep0(ctx context.Context,
 func (r *rpcServer) GetTokenOffers(ctx context.Context, req *replication_server.GetTokenOffersRequest) (*replication_server.GetTokenOffersResponse, error) {
 	resp := &replication_server.GetTokenOffersResponse{
 		Offers: []*replication_server.TokenOffer{
-			{IssuerId: "TODO: implement method", Token: "TODO: implement method", Price: 10},
+			{IssuerId: "NOT IMPLEMENTED", Token: "NOT IMPLEMENTED", Price: 10},
 			{IssuerId: "issuer_1", Token: "issuer_1_token", Price: 10},
 			{IssuerId: "issuer_2", Token: "issuer_2_token", Price: 100},
 			{IssuerId: "issuer_3", Token: "issuer_3_token", Price: 1000},
 		},
+		Total: 4,
 	}
 	return resp, nil
+
+	// TODO: implement
+	// client := replication_server.NewReplicationServerClient(nil)
+	// return client.GetTokenOffers(ctx, req)
 }
