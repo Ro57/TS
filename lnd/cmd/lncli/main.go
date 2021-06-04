@@ -360,6 +360,7 @@ func main() {
 		trackPaymentCommand,
 		versionCommand,
 		profileSubCommand,
+		getTokenOffersCommand,
 	}
 
 	// Add any extra commands determined by build flags.
