@@ -13,6 +13,9 @@ option go_package = "github.com/pkt-cash/pktd/lnd/lnrpc/replication_server";
 service ReplicationServer {
     // Returns available token offers
     rpc GetTokenOffers(GetTokenOffersRequest) returns (GetTokenOffersResponse);
+    
+    // Returns current token balances
+    rpc GetTokenBalances(GetTokenBalancesRequest) returns (GetTokenBalancesResponse);
 }
 
 message GetTokenOffersRequest {
@@ -33,6 +36,21 @@ message TokenOffer {
     //  ? Should we assume decimal prices
     //  ? Add units field
     uint64 price = 3;
+}
+
+message GetTokenBalancesRequest {
+    Pagination params = 1;
+}
+
+message GetTokenBalancesResponse {
+    repeated TokenBalance balances = 1;
+    uint64 total = 2;
+}
+
+message TokenBalance {
+    string token = 1;
+    uint64 available = 2;
+    uint64 frozen = 3;
 }
 
 message Pagination {
