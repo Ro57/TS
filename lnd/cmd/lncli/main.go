@@ -361,6 +361,7 @@ func main() {
 		versionCommand,
 		profileSubCommand,
 		getTokenOffersCommand,
+		getTokenBalancesCommand,
 	}
 
 	// Add any extra commands determined by build flags.
