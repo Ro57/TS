@@ -61,6 +61,7 @@ require (
 	github.com/nxadm/tail v1.4.6-0.20201001195649-edf6bc2dfc36 // indirect
 	github.com/onsi/ginkgo v1.14.3-0.20201013214636-dfe369837f25
 	github.com/onsi/gomega v1.10.3
+	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.3
 	github.com/sethgrid/pester v1.1.1-0.20200617174401-d2ad9ec9a8b6
 	github.com/soheilhy/cmux v0.1.4 // indirect
