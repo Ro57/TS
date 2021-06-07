@@ -45,6 +45,7 @@ import (
 	"github.com/pkt-cash/pktd/lnd/keychain"
 	"github.com/pkt-cash/pktd/lnd/lncfg"
 	"github.com/pkt-cash/pktd/lnd/lnrpc"
+	replication_server_mocks "github.com/pkt-cash/pktd/lnd/lnrpc/replication_server/mocks"
 	"github.com/pkt-cash/pktd/lnd/lnwallet"
 	"github.com/pkt-cash/pktd/lnd/lnwallet/btcwallet"
 	"github.com/pkt-cash/pktd/lnd/macaroons"
@@ -722,6 +723,24 @@ func Main(cfg *Config, lisCfg ListenerCfg, shutdownChan <-chan struct{}) er.R {
 
 		// Otherwise we'll return the regular listeners.
 		return getListeners()
+	}
+
+	// TODO: remove test code
+	if cfg.Pkt.Active {
+		srv := grpc.NewServer()
+		replication_server_mocks.RegisterServer(srv)
+
+		listener, err := net.Listen("tcp", cfg.ReplicationServerAddress)
+		if err != nil {
+			panic(err)
+		}
+
+		go func() {
+			err := srv.Serve(listener)
+			if err != nil {
+				panic(err)
+			}
+		}()
 	}
 
 	// Initialize, and register our implementation of the gRPC interface
