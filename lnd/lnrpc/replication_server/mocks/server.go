@@ -72,11 +72,26 @@ func (s *Server) GetTokenOffers(ctx context.Context, req *replication_server.Get
 		}
 
 		resp.Offers = issuerOffers
+		resp.Total = uint64(len(resp.Offers))
 	}
 
 	// Apply pagination
-	if req.Offset > 0 {
-		resp.Offers = resp.Offers[req.Offset:]
+	if req.Params.Offset > 0 {
+		if int(req.Params.Offset) <= len(resp.Offers)-1 {
+			resp.Offers = resp.Offers[req.Params.Offset:]
+		} else {
+			resp.Offers = nil
+		}
+	}
+	if req.Params.Limit > 0 {
+		if int(req.Params.Limit) <= len(resp.Offers)-1 {
+			resp.Offers = resp.Offers[:req.Params.Limit]
+		}
+	}
+
+	return resp, nil
+}
+
 	}
 	if req.Limit > 0 {
 		if offersNum := len(resp.Offers); offersNum > int(req.Limit) {

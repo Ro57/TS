@@ -61,8 +61,10 @@ func getTokenOffers(ctx *cli.Context) er.R {
 	// Request offers
 	req := &replication_server.GetTokenOffersRequest{
 		IssuerId: issuerID,
-		Limit:    limit,
-		Offset:   offset,
+		Params: &replication_server.Pagination{
+			Limit:  limit,
+			Offset: offset,
+		},
 	}
 	resp, err := client.GetTokenOffers(context.TODO(), req)
 	if err != nil {

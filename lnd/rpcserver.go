@@ -475,6 +475,11 @@ func MainRPCServerPermissions() map[string][]bakery.Op {
 		}},
 		"/lnrpc.Lightning/GetTokenOffers": {
 			{
+				// TODO: inspect entity and action usage
+				Entity: "info",
+				Action: "read",
+			},
+		},
 				Entity: "info",
 				Action: "read",
 			},

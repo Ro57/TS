@@ -17,8 +17,7 @@ service ReplicationServer {
 
 message GetTokenOffersRequest {
     string issuer_id = 1;
-    uint64 limit = 2;
-    uint64 offset = 3;
+    Pagination params = 2;
 }
 
 message GetTokenOffersResponse {
@@ -30,6 +29,13 @@ message TokenOffer {
     string issuer_id = 1;
     string token = 2;
 
-    // TODO: discuss. Should we assume decimal prices?
+    // TODO: discuss
+    //  ? Should we assume decimal prices
+    //  ? Add units field
     uint64 price = 3;
+}
+
+message Pagination {
+    uint64 limit = 1;
+    uint64 offset = 2;
 }
