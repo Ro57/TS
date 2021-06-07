@@ -18,6 +18,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	proxy "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/pkg/errors"
 	"github.com/pkt-cash/pktd/blockchain"
 	"github.com/pkt-cash/pktd/btcec"
 	"github.com/pkt-cash/pktd/btcutil"
@@ -556,14 +557,22 @@ var _ lnrpc.LightningServer = (*rpcServer)(nil)
 // of the sub-servers that it maintains. The set of serverOpts should be the
 // base level options passed to the grPC server. This typically includes things
 // like requiring TLS, etc.
-func newRPCServer(cfg *Config, s *server, macService *macaroons.Service,
-	subServerCgs *subRPCServerConfigs, serverOpts []grpc.ServerOption,
-	restDialOpts []grpc.DialOption, restProxyDest string,
-	atpl *autopilot.Manager, invoiceRegistry *invoices.InvoiceRegistry,
+func newRPCServer(
+	cfg *Config,
+	s *server,
+	macService *macaroons.Service,
+	subServerCgs *subRPCServerConfigs,
+	serverOpts []grpc.ServerOption,
+	restDialOpts []grpc.DialOption,
+	restProxyDest string,
+	atpl *autopilot.Manager,
+	invoiceRegistry *invoices.InvoiceRegistry,
 	tower *watchtower.Standalone,
 	restListen func(net.Addr) (net.Listener, er.R),
 	getListeners rpcListeners,
-	chanPredicate *chanacceptor.ChainedAcceptor) (*rpcServer, er.R) {
+	chanPredicate *chanacceptor.ChainedAcceptor,
+
+) (*rpcServer, er.R) {
 
 	// Set up router rpc backend.
 	channelGraph := s.localChanDB.ChannelGraph()
@@ -6850,19 +6859,38 @@ func (r *rpcServer) FundingStateStep0(ctx context.Context,
 	return &lnrpc.FundingStateStepResp{}, nil
 }
 
+// Proxies initial request to the Replication Server and returns request result
 func (r *rpcServer) GetTokenOffers(ctx context.Context, req *replication_server.GetTokenOffersRequest) (*replication_server.GetTokenOffersResponse, error) {
-	resp := &replication_server.GetTokenOffersResponse{
-		Offers: []*replication_server.TokenOffer{
-			{IssuerId: "NOT IMPLEMENTED", Token: "NOT IMPLEMENTED", Price: 10},
-			{IssuerId: "issuer_1", Token: "issuer_1_token", Price: 10},
-			{IssuerId: "issuer_2", Token: "issuer_2_token", Price: 100},
-			{IssuerId: "issuer_3", Token: "issuer_3_token", Price: 1000},
-		},
-		Total: 4,
+	client, closeConn, err := r.connectReplicationServerClient(ctx)
+	if err != nil {
+		return nil, errors.WithMessage(err, "connecting client to replication server")
 	}
-	return resp, nil
+	defer closeConn()
 
-	// TODO: implement
-	// client := replication_server.NewReplicationServerClient(nil)
-	// return client.GetTokenOffers(ctx, req)
+	resp, err := client.GetTokenOffers(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("querying token offers: %s", err)
+	}
+
+	return resp, nil
+}
+
+// TODO: optimize
+// 	? Move replication server client connection to the rpc server initialization stage, to keep connection in a persistent way.
+//	  This could be done in the following manner: connection reopening/closing for a while, after some time of inactivity
+// 	? Implement auto reconnects
+// 	? Implement auto disconnects
+func (r *rpcServer) connectReplicationServerClient(ctx context.Context) (_ replication_server.ReplicationServerClient, closeConn func() error, _ error) {
+	if r.cfg.ReplicationServerAddress == "" {
+		return nil, nil, errors.New("empty address")
+	}
+
+	// TODO: research connection option to be secure for protected methods
+	// 	? Use "r.restDialOpts"
+	conn, err := grpc.DialContext(ctx, r.cfg.ReplicationServerAddress, grpc.WithInsecure())
+	if err != nil {
+		return nil, nil, errors.WithMessage(err, "dialing")
+	}
+
+	return replication_server.NewReplicationServerClient(conn), conn.Close, nil
 }
