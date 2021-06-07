@@ -480,6 +480,10 @@ func MainRPCServerPermissions() map[string][]bakery.Op {
 				Action: "read",
 			},
 		},
+		// TODO: research
+		// 	? It is expected to have specific permissions
+		"/lnrpc.Lightning/GetTokenBalances": {
+			{
 				Entity: "info",
 				Action: "read",
 			},
@@ -6875,6 +6879,22 @@ func (r *rpcServer) GetTokenOffers(ctx context.Context, req *replication_server.
 	resp, err := client.GetTokenOffers(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("querying token offers: %s", err)
+	}
+
+	return resp, nil
+}
+
+// Proxies initial request to the Replication Server and returns request result
+func (r *rpcServer) GetTokenBalances(ctx context.Context, req *replication_server.GetTokenBalancesRequest) (*replication_server.GetTokenBalancesResponse, error) {
+	client, closeConn, err := r.connectReplicationServerClient(ctx)
+	if err != nil {
+		return nil, errors.WithMessage(err, "connecting client to replication server")
+	}
+	defer closeConn()
+
+	resp, err := client.GetTokenBalances(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("querying token balances: %s", err)
 	}
 
 	return resp, nil
