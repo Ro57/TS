@@ -25,12 +25,11 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type GetTokenOffersRequest struct {
-	IssuerId             string   `protobuf:"bytes,1,opt,name=issuer_id,json=issuerId,proto3" json:"issuer_id,omitempty"`
-	Limit                uint64   `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
-	Offset               uint64   `protobuf:"varint,3,opt,name=offset,proto3" json:"offset,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	IssuerId             string      `protobuf:"bytes,1,opt,name=issuer_id,json=issuerId,proto3" json:"issuer_id,omitempty"`
+	Params               *Pagination `protobuf:"bytes,2,opt,name=params,proto3" json:"params,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
+	XXX_unrecognized     []byte      `json:"-"`
+	XXX_sizecache        int32       `json:"-"`
 }
 
 func (m *GetTokenOffersRequest) Reset()         { *m = GetTokenOffersRequest{} }
@@ -65,18 +64,11 @@ func (m *GetTokenOffersRequest) GetIssuerId() string {
 	return ""
 }
 
-func (m *GetTokenOffersRequest) GetLimit() uint64 {
+func (m *GetTokenOffersRequest) GetParams() *Pagination {
 	if m != nil {
-		return m.Limit
+		return m.Params
 	}
-	return 0
-}
-
-func (m *GetTokenOffersRequest) GetOffset() uint64 {
-	if m != nil {
-		return m.Offset
-	}
-	return 0
+	return nil
 }
 
 type GetTokenOffersResponse struct {
@@ -129,7 +121,9 @@ func (m *GetTokenOffersResponse) GetTotal() uint64 {
 type TokenOffer struct {
 	IssuerId string `protobuf:"bytes,1,opt,name=issuer_id,json=issuerId,proto3" json:"issuer_id,omitempty"`
 	Token    string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
-	// TODO: discuss. Should we assume decimal prices?
+	// TODO: discuss
+	//  ? Should we assume decimal prices
+	//  ? Add units field
 	Price                uint64   `protobuf:"varint,3,opt,name=price,proto3" json:"price,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -182,10 +176,202 @@ func (m *TokenOffer) GetPrice() uint64 {
 	return 0
 }
 
+type GetTokenBalancesRequest struct {
+	Params               *Pagination `protobuf:"bytes,1,opt,name=params,proto3" json:"params,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
+	XXX_unrecognized     []byte      `json:"-"`
+	XXX_sizecache        int32       `json:"-"`
+}
+
+func (m *GetTokenBalancesRequest) Reset()         { *m = GetTokenBalancesRequest{} }
+func (m *GetTokenBalancesRequest) String() string { return proto.CompactTextString(m) }
+func (*GetTokenBalancesRequest) ProtoMessage()    {}
+func (*GetTokenBalancesRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_052aa1ffa0d701d2, []int{3}
+}
+
+func (m *GetTokenBalancesRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetTokenBalancesRequest.Unmarshal(m, b)
+}
+func (m *GetTokenBalancesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetTokenBalancesRequest.Marshal(b, m, deterministic)
+}
+func (m *GetTokenBalancesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetTokenBalancesRequest.Merge(m, src)
+}
+func (m *GetTokenBalancesRequest) XXX_Size() int {
+	return xxx_messageInfo_GetTokenBalancesRequest.Size(m)
+}
+func (m *GetTokenBalancesRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetTokenBalancesRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetTokenBalancesRequest proto.InternalMessageInfo
+
+func (m *GetTokenBalancesRequest) GetParams() *Pagination {
+	if m != nil {
+		return m.Params
+	}
+	return nil
+}
+
+type GetTokenBalancesResponse struct {
+	Balances             []*TokenBalance `protobuf:"bytes,1,rep,name=balances,proto3" json:"balances,omitempty"`
+	Total                uint64          `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
+	XXX_unrecognized     []byte          `json:"-"`
+	XXX_sizecache        int32           `json:"-"`
+}
+
+func (m *GetTokenBalancesResponse) Reset()         { *m = GetTokenBalancesResponse{} }
+func (m *GetTokenBalancesResponse) String() string { return proto.CompactTextString(m) }
+func (*GetTokenBalancesResponse) ProtoMessage()    {}
+func (*GetTokenBalancesResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_052aa1ffa0d701d2, []int{4}
+}
+
+func (m *GetTokenBalancesResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetTokenBalancesResponse.Unmarshal(m, b)
+}
+func (m *GetTokenBalancesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetTokenBalancesResponse.Marshal(b, m, deterministic)
+}
+func (m *GetTokenBalancesResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetTokenBalancesResponse.Merge(m, src)
+}
+func (m *GetTokenBalancesResponse) XXX_Size() int {
+	return xxx_messageInfo_GetTokenBalancesResponse.Size(m)
+}
+func (m *GetTokenBalancesResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetTokenBalancesResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetTokenBalancesResponse proto.InternalMessageInfo
+
+func (m *GetTokenBalancesResponse) GetBalances() []*TokenBalance {
+	if m != nil {
+		return m.Balances
+	}
+	return nil
+}
+
+func (m *GetTokenBalancesResponse) GetTotal() uint64 {
+	if m != nil {
+		return m.Total
+	}
+	return 0
+}
+
+type TokenBalance struct {
+	Token                string   `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	Available            uint64   `protobuf:"varint,2,opt,name=available,proto3" json:"available,omitempty"`
+	Frozen               uint64   `protobuf:"varint,3,opt,name=frozen,proto3" json:"frozen,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *TokenBalance) Reset()         { *m = TokenBalance{} }
+func (m *TokenBalance) String() string { return proto.CompactTextString(m) }
+func (*TokenBalance) ProtoMessage()    {}
+func (*TokenBalance) Descriptor() ([]byte, []int) {
+	return fileDescriptor_052aa1ffa0d701d2, []int{5}
+}
+
+func (m *TokenBalance) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_TokenBalance.Unmarshal(m, b)
+}
+func (m *TokenBalance) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_TokenBalance.Marshal(b, m, deterministic)
+}
+func (m *TokenBalance) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TokenBalance.Merge(m, src)
+}
+func (m *TokenBalance) XXX_Size() int {
+	return xxx_messageInfo_TokenBalance.Size(m)
+}
+func (m *TokenBalance) XXX_DiscardUnknown() {
+	xxx_messageInfo_TokenBalance.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_TokenBalance proto.InternalMessageInfo
+
+func (m *TokenBalance) GetToken() string {
+	if m != nil {
+		return m.Token
+	}
+	return ""
+}
+
+func (m *TokenBalance) GetAvailable() uint64 {
+	if m != nil {
+		return m.Available
+	}
+	return 0
+}
+
+func (m *TokenBalance) GetFrozen() uint64 {
+	if m != nil {
+		return m.Frozen
+	}
+	return 0
+}
+
+type Pagination struct {
+	Limit                uint64   `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
+	Offset               uint64   `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Pagination) Reset()         { *m = Pagination{} }
+func (m *Pagination) String() string { return proto.CompactTextString(m) }
+func (*Pagination) ProtoMessage()    {}
+func (*Pagination) Descriptor() ([]byte, []int) {
+	return fileDescriptor_052aa1ffa0d701d2, []int{6}
+}
+
+func (m *Pagination) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Pagination.Unmarshal(m, b)
+}
+func (m *Pagination) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Pagination.Marshal(b, m, deterministic)
+}
+func (m *Pagination) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Pagination.Merge(m, src)
+}
+func (m *Pagination) XXX_Size() int {
+	return xxx_messageInfo_Pagination.Size(m)
+}
+func (m *Pagination) XXX_DiscardUnknown() {
+	xxx_messageInfo_Pagination.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Pagination proto.InternalMessageInfo
+
+func (m *Pagination) GetLimit() uint64 {
+	if m != nil {
+		return m.Limit
+	}
+	return 0
+}
+
+func (m *Pagination) GetOffset() uint64 {
+	if m != nil {
+		return m.Offset
+	}
+	return 0
+}
+
 func init() {
 	proto.RegisterType((*GetTokenOffersRequest)(nil), "lnrpc.GetTokenOffersRequest")
 	proto.RegisterType((*GetTokenOffersResponse)(nil), "lnrpc.GetTokenOffersResponse")
 	proto.RegisterType((*TokenOffer)(nil), "lnrpc.TokenOffer")
+	proto.RegisterType((*GetTokenBalancesRequest)(nil), "lnrpc.GetTokenBalancesRequest")
+	proto.RegisterType((*GetTokenBalancesResponse)(nil), "lnrpc.GetTokenBalancesResponse")
+	proto.RegisterType((*TokenBalance)(nil), "lnrpc.TokenBalance")
+	proto.RegisterType((*Pagination)(nil), "lnrpc.Pagination")
 }
 
 func init() {
@@ -193,25 +379,33 @@ func init() {
 }
 
 var fileDescriptor_052aa1ffa0d701d2 = []byte{
-	// 281 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x51, 0x4d, 0x4b, 0xc3, 0x40,
-	0x14, 0x24, 0xd6, 0x16, 0xb3, 0x82, 0xd0, 0x45, 0x4b, 0xf0, 0x03, 0x42, 0x4e, 0x11, 0x31, 0x81,
-	0x8a, 0x78, 0xf7, 0x22, 0x1e, 0x44, 0x58, 0xf5, 0xa0, 0x97, 0x92, 0x6c, 0x5e, 0xec, 0xd2, 0x34,
-	0xbb, 0xee, 0x7b, 0xf1, 0xf7, 0x4b, 0x36, 0x91, 0xa0, 0x56, 0x7a, 0x08, 0x64, 0x66, 0x67, 0x77,
-	0xe6, 0xcd, 0x63, 0x17, 0x16, 0x4c, 0xa5, 0x64, 0x46, 0x4a, 0xd7, 0x0b, 0x04, 0xfb, 0x09, 0x36,
-	0xfd, 0x4b, 0x25, 0xc6, 0x6a, 0xd2, 0x7c, 0x5c, 0xd5, 0xd6, 0xc8, 0x28, 0x67, 0x47, 0x77, 0x40,
-	0xcf, 0x7a, 0x05, 0xf5, 0x63, 0x59, 0x82, 0x45, 0x01, 0x1f, 0x0d, 0x20, 0xf1, 0x13, 0xe6, 0x2b,
-	0xc4, 0x06, 0xec, 0x42, 0x15, 0x81, 0x17, 0x7a, 0xb1, 0x2f, 0xf6, 0x3a, 0xe2, 0xbe, 0xe0, 0x87,
-	0x6c, 0x5c, 0xa9, 0xb5, 0xa2, 0x60, 0x27, 0xf4, 0xe2, 0x5d, 0xd1, 0x01, 0x3e, 0x63, 0x13, 0x5d,
-	0x96, 0x08, 0x14, 0x8c, 0x1c, 0xdd, 0xa3, 0xe8, 0x95, 0xcd, 0x7e, 0x7b, 0xa0, 0xd1, 0x35, 0x02,
-	0x3f, 0x77, 0x37, 0xc0, 0x62, 0xe0, 0x85, 0xa3, 0x78, 0x7f, 0x3e, 0x4d, 0x5c, 0xaa, 0x64, 0xd0,
-	0x8a, 0x5e, 0xd0, 0x5a, 0x92, 0xa6, 0xac, 0xfa, 0xb6, 0x74, 0x20, 0x7a, 0x61, 0x6c, 0xd0, 0x6e,
-	0xcd, 0x4c, 0xad, 0xd4, 0x3d, 0xe0, 0x8b, 0x0e, 0xb4, 0xac, 0xb1, 0x4a, 0x42, 0x1f, 0xb9, 0x03,
-	0xf3, 0x9c, 0x4d, 0xc5, 0x50, 0xdc, 0x93, 0xeb, 0x8d, 0x3f, 0xb0, 0x83, 0x9f, 0x63, 0xf0, 0xd3,
-	0x3e, 0xee, 0xc6, 0x06, 0x8f, 0xcf, 0xfe, 0x39, 0xed, 0x66, 0xbf, 0xbd, 0x79, 0xbb, 0x7e, 0x57,
-	0xb4, 0x6c, 0xf2, 0x44, 0xea, 0x75, 0x6a, 0x56, 0x74, 0x29, 0x33, 0x5c, 0xb6, 0x3f, 0x45, 0x5a,
-	0xd5, 0xed, 0x67, 0x8d, 0xdc, 0xb0, 0xbf, 0x7c, 0xe2, 0x16, 0x78, 0xf5, 0x15, 0x00, 0x00, 0xff,
-	0xff, 0x5d, 0x07, 0x8e, 0x5b, 0xef, 0x01, 0x00, 0x00,
+	// 407 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x53, 0xc1, 0x8e, 0xd3, 0x30,
+	0x10, 0x55, 0xd8, 0xdd, 0x6a, 0x33, 0x20, 0xc4, 0x1a, 0x58, 0xa2, 0x65, 0x81, 0x2a, 0xa7, 0x45,
+	0x88, 0x44, 0x2a, 0x42, 0x48, 0x1c, 0x2b, 0x24, 0xc4, 0x01, 0x81, 0x5c, 0x38, 0xd0, 0x4b, 0xe5,
+	0xa4, 0x93, 0xd6, 0xaa, 0x6b, 0x1b, 0xdb, 0xed, 0x81, 0x1f, 0xe3, 0xf7, 0x50, 0x1c, 0xd3, 0x84,
+	0xb4, 0x65, 0x0f, 0x95, 0xfa, 0x9e, 0xdf, 0xbc, 0xf1, 0x9b, 0x8c, 0xe1, 0x95, 0x41, 0x2d, 0x78,
+	0xc9, 0x1c, 0x57, 0x72, 0x66, 0xd1, 0x6c, 0xd1, 0xe4, 0xfb, 0x54, 0xa6, 0x8d, 0x72, 0x8a, 0x9c,
+	0x09, 0x69, 0x74, 0x99, 0xce, 0xe0, 0xf1, 0x47, 0x74, 0xdf, 0xd4, 0x0a, 0xe5, 0x97, 0xaa, 0x42,
+	0x63, 0x29, 0xfe, 0xdc, 0xa0, 0x75, 0xe4, 0x29, 0xc4, 0xdc, 0xda, 0x0d, 0x9a, 0x19, 0x9f, 0x27,
+	0xd1, 0x30, 0xba, 0x89, 0xe9, 0x79, 0x43, 0x7c, 0x9a, 0x93, 0x97, 0x30, 0xd0, 0xcc, 0xb0, 0xb5,
+	0x4d, 0xee, 0x0c, 0xa3, 0x9b, 0xbb, 0xa3, 0x8b, 0xcc, 0xbb, 0x65, 0x5f, 0xd9, 0x82, 0x4b, 0xdf,
+	0x8c, 0x06, 0x41, 0xfa, 0x03, 0x2e, 0xfb, 0x0d, 0xac, 0x56, 0xd2, 0x62, 0x6d, 0xa2, 0x3c, 0x93,
+	0x44, 0xc3, 0x93, 0x8e, 0x49, 0xab, 0xa5, 0x41, 0x40, 0x1e, 0xc1, 0x99, 0x53, 0x8e, 0x09, 0xdf,
+	0xee, 0x94, 0x36, 0x20, 0xfd, 0x0e, 0xd0, 0x6a, 0xff, 0x7f, 0x61, 0x6f, 0xb0, 0x42, 0xe9, 0x0d,
+	0x62, 0xda, 0x80, 0x9a, 0xd5, 0x86, 0x97, 0x98, 0x9c, 0x34, 0xb6, 0x1e, 0xa4, 0x1f, 0xe0, 0xc9,
+	0xdf, 0x1b, 0x8f, 0x99, 0x60, 0xb2, 0xc4, 0xdd, 0x50, 0xda, 0xdc, 0xd1, 0x6d, 0xb9, 0x19, 0x24,
+	0xfb, 0x2e, 0x21, 0x79, 0x0e, 0xe7, 0x45, 0xe0, 0x42, 0xf6, 0x87, 0xdd, 0xec, 0x41, 0x4f, 0x77,
+	0xa2, 0x23, 0xf9, 0xa7, 0x70, 0xaf, 0xab, 0x6f, 0x43, 0x46, 0xdd, 0x90, 0xd7, 0x10, 0xb3, 0x2d,
+	0xe3, 0x82, 0x15, 0x02, 0x43, 0x7d, 0x4b, 0x90, 0x4b, 0x18, 0x54, 0x46, 0xfd, 0x42, 0x19, 0x66,
+	0x10, 0x50, 0xfa, 0x1e, 0xa0, 0x0d, 0x55, 0x3b, 0x0b, 0xbe, 0xe6, 0xce, 0x3b, 0x9f, 0xd2, 0x06,
+	0xd4, 0xb5, 0xaa, 0xaa, 0x2c, 0xba, 0x60, 0x1b, 0xd0, 0xe8, 0x77, 0x04, 0x17, 0xb4, 0xdd, 0xbb,
+	0x89, 0x5f, 0x3b, 0xf2, 0x19, 0xee, 0xff, 0xbb, 0x08, 0xe4, 0x3a, 0x84, 0x3e, 0xb8, 0x80, 0x57,
+	0xcf, 0x8e, 0x9c, 0x86, 0x19, 0x4e, 0xe0, 0x41, 0x7f, 0xbe, 0xe4, 0x79, 0xaf, 0xa4, 0xf7, 0xf9,
+	0xae, 0x5e, 0x1c, 0x3d, 0x6f, 0x4c, 0xc7, 0xef, 0xa6, 0x6f, 0x17, 0xdc, 0x2d, 0x37, 0x45, 0x56,
+	0xaa, 0x75, 0xae, 0x57, 0xee, 0x75, 0xc9, 0xec, 0xb2, 0xfe, 0x33, 0xcf, 0x85, 0xac, 0x7f, 0x46,
+	0x97, 0x07, 0xde, 0x54, 0x31, 0xf0, 0x8f, 0xea, 0xcd, 0x9f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x7d,
+	0xc2, 0x7d, 0xe1, 0x83, 0x03, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -228,6 +422,8 @@ const _ = grpc.SupportPackageIsVersion4
 type ReplicationServerClient interface {
 	// Returns available token offers
 	GetTokenOffers(ctx context.Context, in *GetTokenOffersRequest, opts ...grpc.CallOption) (*GetTokenOffersResponse, error)
+	// Returns current token balances
+	GetTokenBalances(ctx context.Context, in *GetTokenBalancesRequest, opts ...grpc.CallOption) (*GetTokenBalancesResponse, error)
 }
 
 type replicationServerClient struct {
@@ -247,10 +443,21 @@ func (c *replicationServerClient) GetTokenOffers(ctx context.Context, in *GetTok
 	return out, nil
 }
 
+func (c *replicationServerClient) GetTokenBalances(ctx context.Context, in *GetTokenBalancesRequest, opts ...grpc.CallOption) (*GetTokenBalancesResponse, error) {
+	out := new(GetTokenBalancesResponse)
+	err := c.cc.Invoke(ctx, "/lnrpc.ReplicationServer/GetTokenBalances", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ReplicationServerServer is the server API for ReplicationServer service.
 type ReplicationServerServer interface {
 	// Returns available token offers
 	GetTokenOffers(context.Context, *GetTokenOffersRequest) (*GetTokenOffersResponse, error)
+	// Returns current token balances
+	GetTokenBalances(context.Context, *GetTokenBalancesRequest) (*GetTokenBalancesResponse, error)
 }
 
 // UnimplementedReplicationServerServer can be embedded to have forward compatible implementations.
@@ -259,6 +466,9 @@ type UnimplementedReplicationServerServer struct {
 
 func (*UnimplementedReplicationServerServer) GetTokenOffers(ctx context.Context, req *GetTokenOffersRequest) (*GetTokenOffersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTokenOffers not implemented")
+}
+func (*UnimplementedReplicationServerServer) GetTokenBalances(ctx context.Context, req *GetTokenBalancesRequest) (*GetTokenBalancesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTokenBalances not implemented")
 }
 
 func RegisterReplicationServerServer(s *grpc.Server, srv ReplicationServerServer) {
@@ -283,6 +493,24 @@ func _ReplicationServer_GetTokenOffers_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ReplicationServer_GetTokenBalances_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTokenBalancesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReplicationServerServer).GetTokenBalances(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/lnrpc.ReplicationServer/GetTokenBalances",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReplicationServerServer).GetTokenBalances(ctx, req.(*GetTokenBalancesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _ReplicationServer_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "lnrpc.ReplicationServer",
 	HandlerType: (*ReplicationServerServer)(nil),
@@ -290,6 +518,10 @@ var _ReplicationServer_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTokenOffers",
 			Handler:    _ReplicationServer_GetTokenOffers_Handler,
+		},
+		{
+			MethodName: "GetTokenBalances",
+			Handler:    _ReplicationServer_GetTokenBalances_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
