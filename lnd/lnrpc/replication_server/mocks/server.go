@@ -92,15 +92,41 @@ func (s *Server) GetTokenOffers(ctx context.Context, req *replication_server.Get
 	return resp, nil
 }
 
-	}
-	if req.Limit > 0 {
-		if offersNum := len(resp.Offers); offersNum > int(req.Limit) {
-			resp.Total = uint64(offersNum) // keep unlimited offers total num
-		} else {
-			resp.Total = req.Limit
-		}
+// Override method of unimplemented server
+func (s *Server) GetTokenBalances(ctx context.Context, req *replication_server.GetTokenBalancesRequest) (*replication_server.GetTokenBalancesResponse, error) {
+	const (
+		tokensNum = 100
+	)
+	balances := make([]*replication_server.TokenBalance, 0, tokensNum)
 
-		resp.Offers = resp.Offers[:req.Limit]
+	// Fill mocked token balances. At this time balances are not owned by a specific holder
+	for i := tokensNum; i > 0; i-- {
+		balance := &replication_server.TokenBalance{
+			Token:     fmt.Sprintf("token_%d", i),
+			Available: uint64(i*2 + 1),
+			Frozen:    uint64(i*3 + 1),
+		}
+		balances = append(balances, balance)
+	}
+
+	resp := &replication_server.GetTokenBalancesResponse{
+		Balances: balances,
+		Total:    tokensNum,
+	}
+
+	// Apply pagination
+	if req.Params.Offset > 0 {
+		if int(req.Params.Offset) <= len(resp.Balances)-1 {
+			resp.Balances = resp.Balances[req.Params.Offset:]
+		} else {
+			resp.Balances = nil
+		}
+	}
+
+	if req.Params.Limit > 0 {
+		if int(req.Params.Limit) <= len(resp.Balances)-1 {
+			resp.Balances = resp.Balances[:req.Params.Limit]
+		}
 	}
 
 	return resp, nil
