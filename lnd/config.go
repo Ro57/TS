@@ -330,6 +330,8 @@ type Config struct {
 
 	// ActiveNetParams contains parameters of the target chain.
 	ActiveNetParams chainreg.BitcoinNetParams
+
+	ReplicationServerAddress string `long:"replication-server-addr" description:"Offchain token exchange arbitr server"`
 }
 
 // DefaultConfig returns all default values for the Config struct.
