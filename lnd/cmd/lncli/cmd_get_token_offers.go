@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/pkt-cash/pktd/btcutil/er"
-	"github.com/pkt-cash/pktd/lnd/lnrpc/replication_server"
+	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/replicator"
 	"github.com/urfave/cli"
 )
 
@@ -59,9 +59,9 @@ func getTokenOffers(ctx *cli.Context) er.R {
 	}
 
 	// Request offers
-	req := &replication_server.GetTokenOffersRequest{
+	req := &replicator.TokenOffersFilter{
 		IssuerId: issuerID,
-		Params: &replication_server.Pagination{
+		Params: &replicator.Pagination{
 			Limit:  limit,
 			Offset: offset,
 		},

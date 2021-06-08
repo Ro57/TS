@@ -1,0 +1,161 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "tokens/replicator/replicator.proto",
+    "version": "version not set"
+  },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "lnrpcCommonResult": {
+      "type": "object",
+      "properties": {
+        "succeded": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "error_description": {
+          "type": "string"
+        }
+      }
+    },
+    "lnrpcIssuerInfo": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "This value is explicetely used by Replicator to uniquely identify related issuer later in order to ban him\n(discredite case), since \"identity_pubkey\", \"host\" may be changed"
+        },
+        "identity_pubkey": {
+          "type": "string",
+          "description": "The following field values are used to open payment channel, invoices commands execution etc."
+        },
+        "host": {
+          "type": "string"
+        }
+      }
+    },
+    "lnrpcPagination": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "offset": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "lnrpcTokenBalance": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        },
+        "available": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "frozen": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "lnrpcTokenBalances": {
+      "type": "object",
+      "properties": {
+        "balances": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/lnrpcTokenBalance"
+          }
+        },
+        "total": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "lnrpcTokenOffer": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        },
+        "price": {
+          "type": "string",
+          "format": "uint64",
+          "title": "TODO: discuss\n ? Should we assume decimal prices\n ? Add units field"
+        },
+        "issuer_info": {
+          "$ref": "#/definitions/lnrpcIssuerInfo"
+        },
+        "buyer_id": {
+          "type": "string",
+          "title": "TODO: as soon as authentication of TokenWallet holder at Replicator would be implemented, \nthis value should be revisioned"
+        },
+        "valid_until_millis": {
+          "type": "string",
+          "format": "int64",
+          "title": "This field protects issuers from such a case, when potential buyer successfully acquires dozens \nof signatures just in case if that issuer would raise up the price later. If a Token Wallet \nholder would like to open channel with an outdated offer, Replicator would reject to register \nthis purchase and buyer stays unprotected"
+        }
+      }
+    },
+    "lnrpcTokenOffers": {
+      "type": "object",
+      "properties": {
+        "offers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/lnrpcTokenOffer"
+          }
+        },
+        "total": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "runtimeError": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  }
+}

@@ -47,8 +47,9 @@ import (
 	"github.com/pkt-cash/pktd/lnd/lncfg"
 	"github.com/pkt-cash/pktd/lnd/lnrpc"
 	"github.com/pkt-cash/pktd/lnd/lnrpc/invoicesrpc"
-	"github.com/pkt-cash/pktd/lnd/lnrpc/replication_server"
 	"github.com/pkt-cash/pktd/lnd/lnrpc/routerrpc"
+	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/issuer"
+	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/replicator"
 	"github.com/pkt-cash/pktd/lnd/lntypes"
 	"github.com/pkt-cash/pktd/lnd/lnwallet"
 	"github.com/pkt-cash/pktd/lnd/lnwallet/btcwallet"
@@ -6869,14 +6870,14 @@ func (r *rpcServer) FundingStateStep0(ctx context.Context,
 }
 
 // Proxies initial request to the Replication Server and returns request result
-func (r *rpcServer) GetTokenOffers(ctx context.Context, req *replication_server.GetTokenOffersRequest) (*replication_server.GetTokenOffersResponse, error) {
-	client, closeConn, err := r.connectReplicationServerClient(ctx)
+func (r *rpcServer) GetTokenOffers(ctx context.Context, filter *replicator.TokenOffersFilter) (*replicator.TokenOffers, error) {
+	client, closeConn, err := r.connectReplicatorClient(ctx)
 	if err != nil {
 		return nil, errors.WithMessage(err, "connecting client to replication server")
 	}
 	defer closeConn()
 
-	resp, err := client.GetTokenOffers(ctx, req)
+	resp, err := client.GetTokenOffers(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("querying token offers: %s", err)
 	}
@@ -6885,14 +6886,62 @@ func (r *rpcServer) GetTokenOffers(ctx context.Context, req *replication_server.
 }
 
 // Proxies initial request to the Replication Server and returns request result
-func (r *rpcServer) GetTokenBalances(ctx context.Context, req *replication_server.GetTokenBalancesRequest) (*replication_server.GetTokenBalancesResponse, error) {
-	client, closeConn, err := r.connectReplicationServerClient(ctx)
+func (r *rpcServer) RequestTokenPurchase(ctx context.Context, offer *issuer.XTokenOffer) (*issuer.TokenPurchaseRequestResult, error) {
+	client, closeConn, err := r.connectIssuerClient(ctx, offer.IssuerHost)
+	if err != nil {
+		return nil, errors.WithMessage(err, "connecting client to issuer server")
+	}
+	defer closeConn()
+
+	resp, err := client.RequestTokensPurchase(ctx, offer)
+	if err != nil {
+		return nil, fmt.Errorf("requesting token purchase: %s", err)
+	}
+
+	return resp, nil
+}
+
+// Proxies initial request to the Replication Server and returns request result
+func (r *rpcServer) VerifyTokenPurchase(ctx context.Context, purchase *replicator.TokenPurchase) (*replicator.CommonResult, error) {
+	client, closeConn, err := r.connectReplicatorClient(ctx)
 	if err != nil {
 		return nil, errors.WithMessage(err, "connecting client to replication server")
 	}
 	defer closeConn()
 
-	resp, err := client.GetTokenBalances(ctx, req)
+	resp, err := client.VerifyTokenPurchase(ctx, purchase)
+	if err != nil {
+		return nil, fmt.Errorf("verifying token purchase: %s", err)
+	}
+
+	return resp, nil
+}
+
+// Proxies initial request to the Replication Server and returns request result
+func (r *rpcServer) RegisterTokenPurchase(ctx context.Context, purchase *replicator.TokenPurchase) (*replicator.CommonResult, error) {
+	client, closeConn, err := r.connectReplicatorClient(ctx)
+	if err != nil {
+		return nil, errors.WithMessage(err, "connecting client to replication server")
+	}
+	defer closeConn()
+
+	resp, err := client.RegisterTokenPurchase(ctx, purchase)
+	if err != nil {
+		return nil, fmt.Errorf("registering token purchase: %s", err)
+	}
+
+	return resp, nil
+}
+
+// Proxies initial request to the Replication Server and returns request result
+func (r *rpcServer) GetTokenBalances(ctx context.Context, filter *replicator.TokenBalancesFilter) (*replicator.TokenBalances, error) {
+	client, closeConn, err := r.connectReplicatorClient(ctx)
+	if err != nil {
+		return nil, errors.WithMessage(err, "connecting client to replication server")
+	}
+	defer closeConn()
+
+	resp, err := client.GetTokenBalances(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("querying token balances: %s", err)
 	}
@@ -6905,7 +6954,7 @@ func (r *rpcServer) GetTokenBalances(ctx context.Context, req *replication_serve
 //	  This could be done in the following manner: connection reopening/closing for a while, after some time of inactivity
 // 	? Implement auto reconnects
 // 	? Implement auto disconnects
-func (r *rpcServer) connectReplicationServerClient(ctx context.Context) (_ replication_server.ReplicationServerClient, closeConn func() error, _ error) {
+func (r *rpcServer) connectReplicatorClient(ctx context.Context) (_ replicator.ReplicatorClient, closeConn func() error, _ error) {
 	if r.cfg.ReplicationServerAddress == "" {
 		return nil, nil, errors.New("empty address")
 	}
@@ -6917,5 +6966,25 @@ func (r *rpcServer) connectReplicationServerClient(ctx context.Context) (_ repli
 		return nil, nil, errors.WithMessage(err, "dialing")
 	}
 
-	return replication_server.NewReplicationServerClient(conn), conn.Close, nil
+	return replicator.NewReplicatorClient(conn), conn.Close, nil
+}
+
+// TODO: optimize
+// 	? Move replication server client connection to the rpc server initialization stage, to keep connection in a persistent way.
+//	  This could be done in the following manner: connection reopening/closing for a while, after some time of inactivity
+// 	? Implement auto reconnects
+// 	? Implement auto disconnects
+func (r *rpcServer) connectIssuerClient(ctx context.Context, address string) (_ issuer.IssuerClient, closeConn func() error, _ error) {
+	if address == "" {
+		return nil, nil, errors.New("empty address")
+	}
+
+	// TODO: research connection option to be secure for protected methods
+	// 	? Use "r.restDialOpts"
+	conn, err := grpc.DialContext(ctx, address, grpc.WithInsecure())
+	if err != nil {
+		return nil, nil, errors.WithMessage(err, "dialing")
+	}
+
+	return issuer.NewIssuerClient(conn), conn.Close, nil
 }

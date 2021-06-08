@@ -45,7 +45,7 @@ import (
 	"github.com/pkt-cash/pktd/lnd/keychain"
 	"github.com/pkt-cash/pktd/lnd/lncfg"
 	"github.com/pkt-cash/pktd/lnd/lnrpc"
-	replication_server_mocks "github.com/pkt-cash/pktd/lnd/lnrpc/replication_server/mocks"
+	replicator_mocks "github.com/pkt-cash/pktd/lnd/lnrpc/tokens/replicator/mocks"
 	"github.com/pkt-cash/pktd/lnd/lnwallet"
 	"github.com/pkt-cash/pktd/lnd/lnwallet/btcwallet"
 	"github.com/pkt-cash/pktd/lnd/macaroons"
@@ -728,7 +728,7 @@ func Main(cfg *Config, lisCfg ListenerCfg, shutdownChan <-chan struct{}) er.R {
 	// TODO: remove test code
 	if cfg.Pkt.Active {
 		srv := grpc.NewServer()
-		replication_server_mocks.RegisterServer(srv)
+		replicator_mocks.RegisterServer(srv)
 
 		listener, err := net.Listen("tcp", cfg.ReplicationServerAddress)
 		if err != nil {

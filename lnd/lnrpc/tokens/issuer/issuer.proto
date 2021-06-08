@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package lnrpc;
+
+option go_package = "github.com/pkt-cash/pktd/lnd/lnrpc/tokens/issuer";
+
+// Is mainly used to generate compatible querier (client)
+//
+// Generated client can be used to serve two main purposes:
+//  - to interact with it via generated client
+//  - to test generated client implementation by mocking generated server
+//
+service Issuer {
+    // Returns token purchase signature for further registration along with offer via Replication Server
+    rpc RequestTokensPurchase(_TokenOffer) returns (TokenPurchaseRequestResult);
+}
+
+message TokenPurchaseRequestResult {
+    string issuer_signature = 1;
+}
+
+// TODO: think of importing _TokenOffer from replicator.proto, as this message 
+// must be absolutely equal to _TokenOffer from replicator.proto
+message _TokenOffer {
+    string token = 1;
+
+    // TODO: discuss
+    //  ? Should we assume decimal prices
+    //  ? Add units field
+    uint64 price = 2;
+
+    // The following field values are used to open payment channel, invoices commands execution etc.
+    string issuer_identity_pubkey = 3;
+    string issuer_host = 4;
+
+    // TODO: as soon as authentication of TokenWallet holder at Replicator would be implemented, 
+    // this value should be revisioned
+    string buyer_id = 5;
+
+    // This field protects issuers from such a case, when potential buyer successfully acquires dozens 
+    // of signatures just in case if that issuer would raise up the price later
+    int64 ValidUntilMillis = 6;
+}

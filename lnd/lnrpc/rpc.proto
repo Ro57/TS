@@ -4,7 +4,8 @@ package lnrpc;
 
 option go_package = "github.com/pkt-cash/pktd/lnd/lnrpc";
 
-import "replication_server/replication_server.proto";
+import "tokens/replicator/replicator.proto";
+import "tokens/issuer/issuer.proto";
 
 /*
  * Comments in this file will be directly parsed into the API
@@ -526,12 +527,27 @@ service Lightning {
     /* lncli: `gettokenoffers`
         List available token offers.
     */
-    rpc GetTokenOffers(GetTokenOffersRequest) returns (GetTokenOffersResponse);
+    rpc GetTokenOffers(TokenOffersFilter) returns (TokenOffers);
+
+    /* lncli: `requesttokenpurchase`
+        TODO
+    */
+    rpc RequestTokenPurchase(_TokenOffer) returns (TokenPurchaseRequestResult);
+
+    /* lncli: `verifytokenpurchase`
+        TODO
+    */
+    rpc VerifyTokenPurchase(TokenPurchase) returns (CommonResult);
+
+    /* lncli: `registertokenpurchase`
+        TODO
+    */
+    rpc RegisterTokenPurchase(TokenPurchase) returns (CommonResult);
 
     /* lncli: `gettokenbalances`
         List token balances.
     */
-    rpc GetTokenBalances(GetTokenBalancesRequest) returns (GetTokenBalancesResponse);
+    rpc GetTokenBalances(TokenBalancesFilter) returns (TokenBalances);
 }
 
 message Utxo {
