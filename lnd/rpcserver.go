@@ -582,6 +582,10 @@ type rpcServer struct {
 	// allPermissions is a map of all registered gRPC URIs (including
 	// internal and external subservers) to the permissions they require.
 	allPermissions map[string][]bakery.Op
+
+	// jwtStore in memory storage of all authorized token with user id
+	// and payload
+	jwtStore map[string]string
 }
 
 // A compile time check to ensure that rpcServer fully implements the
@@ -6985,13 +6989,35 @@ func (r *rpcServer) connectReplicatorClient(ctx context.Context) (_ replicator.R
 		return nil, nil, errors.New("empty address")
 	}
 
+	applyJWT := grpc.UnaryClientInterceptor(
+		func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+			fmt.Println(req)
+			fmt.Println(method)
+
+			if method == "/lnrpc.Replicator/GetTokenBalances" {
+				getTokenBalancesReq := req.(string)
+				jwt, ok := r.jwtStore[getTokenBalancesReq]
+				if !ok {
+					return errors.New("Undefined jwt id")
+				}
+
+				_ = jwt
+			}
+			return invoker(ctx, method, req, reply, cc, opts...)
+		},
+	)
+
 	// TODO: research connection option to be secure for protected methods
 	// 	? Use "r.restDialOpts"
-	conn, err := grpc.DialContext(ctx, r.cfg.ReplicationServerAddress, grpc.WithInsecure())
+	conn, err := grpc.DialContext(
+		ctx,
+		r.cfg.ReplicationServerAddress,
+		grpc.WithInsecure(),
+		grpc.WithChainUnaryInterceptor(applyJWT),
+	)
 	if err != nil {
 		return nil, nil, errors.WithMessage(err, "dialing")
 	}
-
 	return replicator.NewReplicatorClient(conn), conn.Close, nil
 }
 
