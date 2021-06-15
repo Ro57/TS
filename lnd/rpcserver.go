@@ -6992,7 +6992,7 @@ func (r *rpcServer) connectReplicatorClient(ctx context.Context) (_ replicator.R
 
 			switch method {
 			case "/lnrpc.Replicator/GetTokenBalances":
-				getTokenBalancesReq := req.(replicator.TokenBalancesFilter)
+				getTokenBalancesReq := req.(replicator.GetTokenBalancesRequest)
 				holderID = getTokenBalancesReq.HolderId
 			}
 
