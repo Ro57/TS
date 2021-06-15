@@ -59,7 +59,7 @@ func getTokenOffers(ctx *cli.Context) er.R {
 	}
 
 	// Request offers
-	req := &replicator.TokenOffersFilter{
+	req := &replicator.GetTokenOffersRequest{
 		IssuerId: issuerID,
 		Params: &replicator.Pagination{
 			Limit:  limit,

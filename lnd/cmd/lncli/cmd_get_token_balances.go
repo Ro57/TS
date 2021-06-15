@@ -48,7 +48,7 @@ func getTokenBalances(ctx *cli.Context) er.R {
 	}
 
 	// Request token balances
-	req := &replicator.TokenBalancesFilter{
+	req := &replicator.GetTokenBalancesRequest{
 		Params: &replicator.Pagination{
 			Limit:  limit,
 			Offset: offset,
