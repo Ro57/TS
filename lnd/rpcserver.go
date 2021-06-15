@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
+	empty "github.com/golang/protobuf/ptypes/empty"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	proxy "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/pkg/errors"
@@ -484,6 +485,30 @@ func MainRPCServerPermissions() map[string][]bakery.Op {
 		// TODO: research
 		// 	? It is expected to have specific permissions
 		"/lnrpc.Lightning/GetTokenBalances": {
+			{
+				Entity: "info",
+				Action: "read",
+			},
+		},
+		// TODO: research
+		// 	? It is expected to have specific permissions
+		"/lnrpc.Lightning/SignTokenPurchase": {
+			{
+				Entity: "info",
+				Action: "read",
+			},
+		},
+		// TODO: research
+		// 	? It is expected to have specific permissions
+		"/lnrpc.Lightning/VerifyTokenPurchase": {
+			{
+				Entity: "info",
+				Action: "read",
+			},
+		},
+		// TODO: research
+		// 	? It is expected to have specific permissions
+		"/lnrpc.Lightning/RegisterTokenPurchase": {
 			{
 				Entity: "info",
 				Action: "read",
@@ -6870,14 +6895,14 @@ func (r *rpcServer) FundingStateStep0(ctx context.Context,
 }
 
 // Proxies initial request to the Replication Server and returns request result
-func (r *rpcServer) GetTokenOffers(ctx context.Context, filter *replicator.TokenOffersFilter) (*replicator.TokenOffers, error) {
+func (r *rpcServer) GetTokenOffers(ctx context.Context, req *replicator.GetTokenOffersRequest) (*replicator.GetTokenOffersResponse, error) {
 	client, closeConn, err := r.connectReplicatorClient(ctx)
 	if err != nil {
 		return nil, errors.WithMessage(err, "connecting client to replication server")
 	}
 	defer closeConn()
 
-	resp, err := client.GetTokenOffers(ctx, filter)
+	resp, err := client.GetTokenOffers(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("querying token offers: %s", err)
 	}
@@ -6885,47 +6910,44 @@ func (r *rpcServer) GetTokenOffers(ctx context.Context, filter *replicator.Token
 	return resp, nil
 }
 
-// Proxies initial request to the Replication Server and returns request result
-func (r *rpcServer) RequestTokenPurchase(ctx context.Context, offer *issuer.XTokenOffer) (*issuer.TokenPurchaseRequestResult, error) {
-	client, closeConn, err := r.connectIssuerClient(ctx, offer.IssuerHost)
+func (r *rpcServer) SignTokenPurchase(ctx context.Context, req *issuer.SignTokenPurchaseRequest) (*issuer.SignTokenPurchaseResponse, error) {
+	client, closeConn, err := r.connectIssuerClient(ctx, req.Offer.IssuerInfo.Host)
 	if err != nil {
 		return nil, errors.WithMessage(err, "connecting client to issuer server")
 	}
 	defer closeConn()
 
-	resp, err := client.RequestTokensPurchase(ctx, offer)
+	resp, err := client.SignTokenPurchase(ctx, req)
 	if err != nil {
-		return nil, fmt.Errorf("requesting token purchase: %s", err)
+		return nil, fmt.Errorf("requesting token purchase signature: %s", err)
 	}
 
 	return resp, nil
 }
 
-// Proxies initial request to the Replication Server and returns request result
-func (r *rpcServer) VerifyTokenPurchase(ctx context.Context, purchase *replicator.TokenPurchase) (*replicator.CommonResult, error) {
+func (r *rpcServer) VerifyTokenPurchase(ctx context.Context, req *replicator.VerifyTokenPurchaseRequest) (*empty.Empty, error) {
 	client, closeConn, err := r.connectReplicatorClient(ctx)
 	if err != nil {
 		return nil, errors.WithMessage(err, "connecting client to replication server")
 	}
 	defer closeConn()
 
-	resp, err := client.VerifyTokenPurchase(ctx, purchase)
+	resp, err := client.VerifyTokenPurchase(ctx, req)
 	if err != nil {
-		return nil, fmt.Errorf("verifying token purchase: %s", err)
+		return nil, fmt.Errorf("verifying token purchase signature: %s", err)
 	}
 
 	return resp, nil
 }
 
-// Proxies initial request to the Replication Server and returns request result
-func (r *rpcServer) RegisterTokenPurchase(ctx context.Context, purchase *replicator.TokenPurchase) (*replicator.CommonResult, error) {
+func (r *rpcServer) RegisterTokenPurchase(ctx context.Context, req *replicator.RegisterTokenPurchaseRequest) (*empty.Empty, error) {
 	client, closeConn, err := r.connectReplicatorClient(ctx)
 	if err != nil {
 		return nil, errors.WithMessage(err, "connecting client to replication server")
 	}
 	defer closeConn()
 
-	resp, err := client.RegisterTokenPurchase(ctx, purchase)
+	resp, err := client.RegisterTokenPurchase(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("registering token purchase: %s", err)
 	}
@@ -6933,15 +6955,14 @@ func (r *rpcServer) RegisterTokenPurchase(ctx context.Context, purchase *replica
 	return resp, nil
 }
 
-// Proxies initial request to the Replication Server and returns request result
-func (r *rpcServer) GetTokenBalances(ctx context.Context, filter *replicator.TokenBalancesFilter) (*replicator.TokenBalances, error) {
+func (r *rpcServer) GetTokenBalances(ctx context.Context, req *replicator.GetTokenBalancesRequest) (*replicator.GetTokenBalancesResponse, error) {
 	client, closeConn, err := r.connectReplicatorClient(ctx)
 	if err != nil {
 		return nil, errors.WithMessage(err, "connecting client to replication server")
 	}
 	defer closeConn()
 
-	resp, err := client.GetTokenBalances(ctx, filter)
+	resp, err := client.GetTokenBalances(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("querying token balances: %s", err)
 	}

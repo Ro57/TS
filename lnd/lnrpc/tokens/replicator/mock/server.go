@@ -21,7 +21,7 @@ func RegisterServer(root *grpc.Server) {
 }
 
 // Override method of unimplemented server
-func (s *Server) GetTokenOffers(ctx context.Context, filter *replicator.TokenOffersFilter) (*replicator.TokenOffers, error) {
+func (s *Server) GetTokenOffers(ctx context.Context, req *replicator.GetTokenOffersRequest) (*replicator.GetTokenOffersResponse, error) {
 	const (
 		eachIssuerTokensNum = 3
 		offersNum           = 1000 * eachIssuerTokensNum
@@ -32,7 +32,7 @@ func (s *Server) GetTokenOffers(ctx context.Context, filter *replicator.TokenOff
 	// Fill mocked offers such, that each issuer has several tokens present
 	for i := offersNum / eachIssuerTokensNum; i > 0; i-- {
 		offer := &replicator.TokenOffer{
-			ValidUntilMillis: time.Now().UnixNano() + int64(i)*1000,
+			ValidUntilSeconds: time.Now().Unix() + int64(i)*1000,
 			IssuerInfo: &replicator.IssuerInfo{
 				Id:             fmt.Sprintf("issuer_%d", i),
 				IdentityPubkey: "issuer_node_pub_key",
@@ -44,7 +44,7 @@ func (s *Server) GetTokenOffers(ctx context.Context, filter *replicator.TokenOff
 		offers = append(offers, offer)
 
 		offer = &replicator.TokenOffer{
-			ValidUntilMillis: time.Now().UnixNano() + int64(i)*1000,
+			ValidUntilSeconds: time.Now().Unix() + int64(i)*1000,
 			IssuerInfo: &replicator.IssuerInfo{
 				Id:             fmt.Sprintf("issuer_%d", i),
 				IdentityPubkey: "issuer_node_pub_key",
@@ -56,7 +56,7 @@ func (s *Server) GetTokenOffers(ctx context.Context, filter *replicator.TokenOff
 		offers = append(offers, offer)
 
 		offer = &replicator.TokenOffer{
-			ValidUntilMillis: time.Now().UnixNano() + int64(i)*1000,
+			ValidUntilSeconds: time.Now().Unix() + int64(i)*1000,
 			IssuerInfo: &replicator.IssuerInfo{
 				Id:             fmt.Sprintf("issuer_%d", i),
 				IdentityPubkey: "issuer_node_pub_key",
@@ -68,13 +68,13 @@ func (s *Server) GetTokenOffers(ctx context.Context, filter *replicator.TokenOff
 		offers = append(offers, offer)
 	}
 
-	resp := &replicator.TokenOffers{
+	resp := &replicator.GetTokenOffersResponse{
 		Offers: offers,
 		Total:  offersNum,
 	}
 
 	// Apply filter by issuer id
-	if filter.IssuerId != "" {
+	if req.IssuerId != "" {
 		issuerOffers := make([]*replicator.TokenOffer, 0, eachIssuerTokensNum)
 
 		for _, offer := range resp.Offers {
@@ -82,7 +82,7 @@ func (s *Server) GetTokenOffers(ctx context.Context, filter *replicator.TokenOff
 				break
 			}
 
-			if offer.IssuerInfo.Id == filter.IssuerId {
+			if offer.IssuerInfo.Id == req.IssuerId {
 				issuerOffers = append(issuerOffers, offer)
 			}
 		}
@@ -92,16 +92,16 @@ func (s *Server) GetTokenOffers(ctx context.Context, filter *replicator.TokenOff
 	}
 
 	// Apply pagination
-	if filter.Params.Offset > 0 {
-		if int(filter.Params.Offset) <= len(resp.Offers)-1 {
-			resp.Offers = resp.Offers[filter.Params.Offset:]
+	if req.Params.Offset > 0 {
+		if int(req.Params.Offset) <= len(resp.Offers)-1 {
+			resp.Offers = resp.Offers[req.Params.Offset:]
 		} else {
 			resp.Offers = nil
 		}
 	}
-	if filter.Params.Limit > 0 {
-		if int(filter.Params.Limit) <= len(resp.Offers)-1 {
-			resp.Offers = resp.Offers[:filter.Params.Limit]
+	if req.Params.Limit > 0 {
+		if int(req.Params.Limit) <= len(resp.Offers)-1 {
+			resp.Offers = resp.Offers[:req.Params.Limit]
 		}
 	}
 
@@ -109,7 +109,7 @@ func (s *Server) GetTokenOffers(ctx context.Context, filter *replicator.TokenOff
 }
 
 // Override method of unimplemented server
-func (s *Server) GetTokenBalances(ctx context.Context, filter *replicator.TokenBalancesFilter) (*replicator.TokenBalances, error) {
+func (s *Server) GetTokenBalances(ctx context.Context, req *replicator.GetTokenBalancesRequest) (*replicator.GetTokenBalancesResponse, error) {
 	const (
 		tokensNum = 100
 	)
@@ -125,25 +125,29 @@ func (s *Server) GetTokenBalances(ctx context.Context, filter *replicator.TokenB
 		balances = append(balances, balance)
 	}
 
-	resp := &replicator.TokenBalances{
+	resp := &replicator.GetTokenBalancesResponse{
 		Balances: balances,
 		Total:    tokensNum,
 	}
 
 	// Apply pagination
-	if filter.Params.Offset > 0 {
-		if int(filter.Params.Offset) <= len(resp.Balances)-1 {
-			resp.Balances = resp.Balances[filter.Params.Offset:]
+	if req.Params.Offset > 0 {
+		if int(req.Params.Offset) <= len(resp.Balances)-1 {
+			resp.Balances = resp.Balances[req.Params.Offset:]
 		} else {
 			resp.Balances = nil
 		}
 	}
 
-	if filter.Params.Limit > 0 {
-		if int(filter.Params.Limit) <= len(resp.Balances)-1 {
-			resp.Balances = resp.Balances[:filter.Params.Limit]
+	if req.Params.Limit > 0 {
+		if int(req.Params.Limit) <= len(resp.Balances)-1 {
+			resp.Balances = resp.Balances[:req.Params.Limit]
 		}
 	}
 
 	return resp, nil
 }
+
+// TODO: implement VerifyTokenPurchaseSignature()
+
+// TODO: implement RegisterTokenPurchase()

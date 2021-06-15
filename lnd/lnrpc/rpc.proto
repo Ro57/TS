@@ -6,6 +6,7 @@ option go_package = "github.com/pkt-cash/pktd/lnd/lnrpc";
 
 import "tokens/replicator/replicator.proto";
 import "tokens/issuer/issuer.proto";
+import "google/protobuf/empty.proto";
 
 /*
  * Comments in this file will be directly parsed into the API
@@ -524,30 +525,28 @@ service Lightning {
         returns (ListPermissionsResponse);
 
     
-    /* lncli: `gettokenoffers`
-        List available token offers.
-    */
-    rpc GetTokenOffers(TokenOffersFilter) returns (TokenOffers);
 
-    /* lncli: `requesttokenpurchase`
-        TODO
-    */
-    rpc RequestTokenPurchase(_TokenOffer) returns (TokenPurchaseRequestResult);
 
-    /* lncli: `verifytokenpurchase`
-        TODO
-    */
-    rpc VerifyTokenPurchase(TokenPurchase) returns (CommonResult);
+    // lncli: `gettokenbalances`
+	// Proxies initial request to the replicator for available token offers
+    rpc GetTokenBalances(replicator.GetTokenBalancesRequest) returns (replicator.GetTokenBalancesResponse);
 
-    /* lncli: `registertokenpurchase`
-        TODO
-    */
-    rpc RegisterTokenPurchase(TokenPurchase) returns (CommonResult);
+	// lncli: `gettokenoffers`
+	// Proxies initial request to the replicator for available issuer token offers
+    rpc GetTokenOffers(replicator.GetTokenOffersRequest) returns (replicator.GetTokenOffersResponse);
 
-    /* lncli: `gettokenbalances`
-        List token balances.
-    */
-    rpc GetTokenBalances(TokenBalancesFilter) returns (TokenBalances);
+	// lncli: `signtokenpurchase`
+	// Proxies initial request to the issuer for a signature
+    rpc SignTokenPurchase(issuer.SignTokenPurchaseRequest) returns (issuer.SignTokenPurchaseResponse);
+
+	// lncli: `verifytokenpurchase`
+	// Proxies initial request to the replicator for an issuer's signature verification
+    rpc VerifyTokenPurchase(replicator.VerifyTokenPurchaseRequest) returns (google.protobuf.Empty);
+
+	// lncli: `registertokenpurchase`
+	// Proxies initial request to the replicator for a token purchase registration and further monitoring
+    rpc RegisterTokenPurchase(replicator.RegisterTokenPurchaseRequest) returns (google.protobuf.Empty);
+
 }
 
 message Utxo {

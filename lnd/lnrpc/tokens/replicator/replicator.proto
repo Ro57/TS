@@ -1,8 +1,10 @@
 syntax = "proto3";
 
-package lnrpc;
+package replicator;
 
 option go_package = "github.com/pkt-cash/pktd/lnd/lnrpc/tokens/replicator";
+
+import "google/protobuf/empty.proto";
 
 // Is mainly used to generate compatible querier (client)
 //
@@ -12,26 +14,26 @@ option go_package = "github.com/pkt-cash/pktd/lnd/lnrpc/tokens/replicator";
 //
 service Replicator {
     // Returns available token offers
-    rpc GetTokenOffers(TokenOffersFilter) returns (TokenOffers);
+    rpc GetTokenOffers(GetTokenOffersRequest) returns (GetTokenOffersResponse);
 
     // Verifies a signature of an issuer for this token purchase. This
     // method should be called before channel initialization
-    rpc VerifyTokenPurchase(TokenPurchase) returns (CommonResult);
+    rpc VerifyTokenPurchase(VerifyTokenPurchaseRequest) returns (google.protobuf.Empty);
 
     // Registers token purchase to be tracked on the blockchain 
     // right after some necessary token purchase checks
-    rpc RegisterTokenPurchase(TokenPurchase) returns (CommonResult);
+    rpc RegisterTokenPurchase(RegisterTokenPurchaseRequest) returns (google.protobuf.Empty);
 
     // Returns current token balances
-    rpc GetTokenBalances(TokenBalancesFilter) returns (TokenBalances);
+    rpc GetTokenBalances(GetTokenBalancesRequest) returns (GetTokenBalancesResponse);
 }
 
-message TokenOffersFilter {
+message GetTokenOffersRequest {
     string issuer_id = 1;
     Pagination params = 2;
 }
 
-message TokenOffers {
+message GetTokenOffersResponse {
     repeated TokenOffer offers = 1;
     uint64 total = 2;
 }
@@ -46,15 +48,17 @@ message TokenOffer {
 
     IssuerInfo issuer_info = 3;
 
-    // TODO: as soon as authentication of TokenWallet holder at Replicator would be implemented, 
-    // this value should be revisioned
-    string buyer_id = 4;
+    // It is assumed that the each registered token holder login is unique
+    // 
+    // Value of this field may be empty or filled depending on context 
+    // (e.g. gettokenoffers, verifytokenpurchasesignature)
+    string token_holder_login = 4;
 
     // This field protects issuers from such a case, when potential buyer successfully acquires dozens 
     // of signatures just in case if that issuer would raise up the price later. If a Token Wallet 
     // holder would like to open channel with an outdated offer, Replicator would reject to register 
     // this purchase and buyer stays unprotected
-    int64 valid_until_millis = 5;
+    int64 valid_until_seconds = 5;
 }
 
 message IssuerInfo {
@@ -64,13 +68,23 @@ message IssuerInfo {
 
     // The following field values are used to open payment channel, invoices commands execution etc.
     string identity_pubkey = 2;
+
+    // Is used to establish client connection to the issuer's node during some RPC calls
     string host = 3;
+}
+
+message VerifyTokenPurchaseRequest {
+    TokenPurchase purchase = 1;
+}
+
+message RegisterTokenPurchaseRequest {
+    TokenPurchase purchase = 1;
 }
 
 message TokenPurchase {
     TokenOffer offer = 1;
     
-    // Presents signature of offer. This signature is used to identify, 
+    // Presents signature of an offer. This signature is used to identify, 
     // that issuer accepts terms described in the offer and is responsible 
     // to follow them in this transaction. If signature is not valid, then 
     // channel should be closed. Otherwise, Replicator registers token 
@@ -81,16 +95,14 @@ message TokenPurchase {
     string initial_tx_hash = 3;
 }
 
-message CommonResult {
-    bool succeded = 1;
-    string error_description = 2;
-}
-
-message TokenBalancesFilter {
+// NOTE: we don't provide any token holder identification since the reqeuest is
+// authorized with JWT applied to the request metadata. It means, that replicator
+// is capable to extract all data needed to process the request
+message GetTokenBalancesRequest {
     Pagination params = 1;
 }
 
-message TokenBalances {
+message GetTokenBalancesResponse {
     repeated TokenBalance balances = 1;
     uint64 total = 2;
 }

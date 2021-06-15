@@ -12,19 +12,49 @@
   ],
   "paths": {},
   "definitions": {
-    "lnrpcCommonResult": {
+    "protobufAny": {
       "type": "object",
       "properties": {
-        "succeded": {
-          "type": "boolean",
-          "format": "boolean"
-        },
-        "error_description": {
+        "type_url": {
           "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
         }
       }
     },
-    "lnrpcIssuerInfo": {
+    "replicatorGetTokenBalancesResponse": {
+      "type": "object",
+      "properties": {
+        "balances": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/replicatorTokenBalance"
+          }
+        },
+        "total": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "replicatorGetTokenOffersResponse": {
+      "type": "object",
+      "properties": {
+        "offers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/replicatorTokenOffer"
+          }
+        },
+        "total": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "replicatorIssuerInfo": {
       "type": "object",
       "properties": {
         "id": {
@@ -36,11 +66,12 @@
           "description": "The following field values are used to open payment channel, invoices commands execution etc."
         },
         "host": {
-          "type": "string"
+          "type": "string",
+          "title": "Is used to establish client connection to the issuer's node during some RPC calls"
         }
       }
     },
-    "lnrpcPagination": {
+    "replicatorPagination": {
       "type": "object",
       "properties": {
         "limit": {
@@ -53,7 +84,7 @@
         }
       }
     },
-    "lnrpcTokenBalance": {
+    "replicatorTokenBalance": {
       "type": "object",
       "properties": {
         "token": {
@@ -69,22 +100,7 @@
         }
       }
     },
-    "lnrpcTokenBalances": {
-      "type": "object",
-      "properties": {
-        "balances": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/lnrpcTokenBalance"
-          }
-        },
-        "total": {
-          "type": "string",
-          "format": "uint64"
-        }
-      }
-    },
-    "lnrpcTokenOffer": {
+    "replicatorTokenOffer": {
       "type": "object",
       "properties": {
         "token": {
@@ -96,43 +112,32 @@
           "title": "TODO: discuss\n ? Should we assume decimal prices\n ? Add units field"
         },
         "issuer_info": {
-          "$ref": "#/definitions/lnrpcIssuerInfo"
+          "$ref": "#/definitions/replicatorIssuerInfo"
         },
-        "buyer_id": {
+        "token_holder_login": {
           "type": "string",
-          "title": "TODO: as soon as authentication of TokenWallet holder at Replicator would be implemented, \nthis value should be revisioned"
+          "description": "Value of this field may be empty or filled depending on context \n(e.g. gettokenoffers, verifytokenpurchasesignature)",
+          "title": "It is assumed that the each registered token holder login is unique"
         },
-        "valid_until_millis": {
+        "valid_until_seconds": {
           "type": "string",
           "format": "int64",
           "title": "This field protects issuers from such a case, when potential buyer successfully acquires dozens \nof signatures just in case if that issuer would raise up the price later. If a Token Wallet \nholder would like to open channel with an outdated offer, Replicator would reject to register \nthis purchase and buyer stays unprotected"
         }
       }
     },
-    "lnrpcTokenOffers": {
+    "replicatorTokenPurchase": {
       "type": "object",
       "properties": {
-        "offers": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/lnrpcTokenOffer"
-          }
+        "offer": {
+          "$ref": "#/definitions/replicatorTokenOffer"
         },
-        "total": {
+        "issuer_signature": {
           "type": "string",
-          "format": "uint64"
-        }
-      }
-    },
-    "protobufAny": {
-      "type": "object",
-      "properties": {
-        "type_url": {
+          "title": "Presents signature of an offer. This signature is used to identify, \nthat issuer accepts terms described in the offer and is responsible \nto follow them in this transaction. If signature is not valid, then \nchannel should be closed. Otherwise, Replicator registers token \npurchase details provided and tracks blockchain for a closing transaction \nin order to determine if the issuer were not break terms"
+        },
+        "initial_tx_hash": {
           "type": "string"
-        },
-        "value": {
-          "type": "string",
-          "format": "byte"
         }
       }
     },

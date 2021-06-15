@@ -7,6 +7,7 @@ import (
 	context "context"
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
+	replicator "github.com/pkt-cash/pktd/lnd/lnrpc/tokens/replicator"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -24,163 +25,108 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
-type TokenPurchaseRequestResult struct {
+type SignTokenPurchaseRequest struct {
+	Offer                *replicator.TokenOffer `protobuf:"bytes,1,opt,name=offer,proto3" json:"offer,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
+	XXX_unrecognized     []byte                 `json:"-"`
+	XXX_sizecache        int32                  `json:"-"`
+}
+
+func (m *SignTokenPurchaseRequest) Reset()         { *m = SignTokenPurchaseRequest{} }
+func (m *SignTokenPurchaseRequest) String() string { return proto.CompactTextString(m) }
+func (*SignTokenPurchaseRequest) ProtoMessage()    {}
+func (*SignTokenPurchaseRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e8faa554d9d56586, []int{0}
+}
+
+func (m *SignTokenPurchaseRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_SignTokenPurchaseRequest.Unmarshal(m, b)
+}
+func (m *SignTokenPurchaseRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_SignTokenPurchaseRequest.Marshal(b, m, deterministic)
+}
+func (m *SignTokenPurchaseRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SignTokenPurchaseRequest.Merge(m, src)
+}
+func (m *SignTokenPurchaseRequest) XXX_Size() int {
+	return xxx_messageInfo_SignTokenPurchaseRequest.Size(m)
+}
+func (m *SignTokenPurchaseRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_SignTokenPurchaseRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SignTokenPurchaseRequest proto.InternalMessageInfo
+
+func (m *SignTokenPurchaseRequest) GetOffer() *replicator.TokenOffer {
+	if m != nil {
+		return m.Offer
+	}
+	return nil
+}
+
+type SignTokenPurchaseResponse struct {
 	IssuerSignature      string   `protobuf:"bytes,1,opt,name=issuer_signature,json=issuerSignature,proto3" json:"issuer_signature,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *TokenPurchaseRequestResult) Reset()         { *m = TokenPurchaseRequestResult{} }
-func (m *TokenPurchaseRequestResult) String() string { return proto.CompactTextString(m) }
-func (*TokenPurchaseRequestResult) ProtoMessage()    {}
-func (*TokenPurchaseRequestResult) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e8faa554d9d56586, []int{0}
+func (m *SignTokenPurchaseResponse) Reset()         { *m = SignTokenPurchaseResponse{} }
+func (m *SignTokenPurchaseResponse) String() string { return proto.CompactTextString(m) }
+func (*SignTokenPurchaseResponse) ProtoMessage()    {}
+func (*SignTokenPurchaseResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e8faa554d9d56586, []int{1}
 }
 
-func (m *TokenPurchaseRequestResult) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_TokenPurchaseRequestResult.Unmarshal(m, b)
+func (m *SignTokenPurchaseResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_SignTokenPurchaseResponse.Unmarshal(m, b)
 }
-func (m *TokenPurchaseRequestResult) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_TokenPurchaseRequestResult.Marshal(b, m, deterministic)
+func (m *SignTokenPurchaseResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_SignTokenPurchaseResponse.Marshal(b, m, deterministic)
 }
-func (m *TokenPurchaseRequestResult) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TokenPurchaseRequestResult.Merge(m, src)
+func (m *SignTokenPurchaseResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SignTokenPurchaseResponse.Merge(m, src)
 }
-func (m *TokenPurchaseRequestResult) XXX_Size() int {
-	return xxx_messageInfo_TokenPurchaseRequestResult.Size(m)
+func (m *SignTokenPurchaseResponse) XXX_Size() int {
+	return xxx_messageInfo_SignTokenPurchaseResponse.Size(m)
 }
-func (m *TokenPurchaseRequestResult) XXX_DiscardUnknown() {
-	xxx_messageInfo_TokenPurchaseRequestResult.DiscardUnknown(m)
+func (m *SignTokenPurchaseResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_SignTokenPurchaseResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_TokenPurchaseRequestResult proto.InternalMessageInfo
+var xxx_messageInfo_SignTokenPurchaseResponse proto.InternalMessageInfo
 
-func (m *TokenPurchaseRequestResult) GetIssuerSignature() string {
+func (m *SignTokenPurchaseResponse) GetIssuerSignature() string {
 	if m != nil {
 		return m.IssuerSignature
 	}
 	return ""
 }
 
-// TODO: think of importing _TokenOffer from replicator.proto, as this message
-// must be absolutely equal to _TokenOffer from replicator.proto
-type XTokenOffer struct {
-	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	// TODO: discuss
-	//  ? Should we assume decimal prices
-	//  ? Add units field
-	Price uint64 `protobuf:"varint,2,opt,name=price,proto3" json:"price,omitempty"`
-	// The following field values are used to open payment channel, invoices commands execution etc.
-	IssuerIdentityPubkey string `protobuf:"bytes,3,opt,name=issuer_identity_pubkey,json=issuerIdentityPubkey,proto3" json:"issuer_identity_pubkey,omitempty"`
-	IssuerHost           string `protobuf:"bytes,4,opt,name=issuer_host,json=issuerHost,proto3" json:"issuer_host,omitempty"`
-	// TODO: as soon as authentication of TokenWallet holder at Replicator would be implemented,
-	// this value should be revisioned
-	BuyerId string `protobuf:"bytes,5,opt,name=buyer_id,json=buyerId,proto3" json:"buyer_id,omitempty"`
-	// This field protects issuers from such a case, when potential buyer successfully acquires dozens
-	// of signatures just in case if that issuer would raise up the price later
-	ValidUntilMillis     int64    `protobuf:"varint,6,opt,name=ValidUntilMillis,proto3" json:"ValidUntilMillis,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *XTokenOffer) Reset()         { *m = XTokenOffer{} }
-func (m *XTokenOffer) String() string { return proto.CompactTextString(m) }
-func (*XTokenOffer) ProtoMessage()    {}
-func (*XTokenOffer) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e8faa554d9d56586, []int{1}
-}
-
-func (m *XTokenOffer) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_XTokenOffer.Unmarshal(m, b)
-}
-func (m *XTokenOffer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_XTokenOffer.Marshal(b, m, deterministic)
-}
-func (m *XTokenOffer) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_XTokenOffer.Merge(m, src)
-}
-func (m *XTokenOffer) XXX_Size() int {
-	return xxx_messageInfo_XTokenOffer.Size(m)
-}
-func (m *XTokenOffer) XXX_DiscardUnknown() {
-	xxx_messageInfo_XTokenOffer.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_XTokenOffer proto.InternalMessageInfo
-
-func (m *XTokenOffer) GetToken() string {
-	if m != nil {
-		return m.Token
-	}
-	return ""
-}
-
-func (m *XTokenOffer) GetPrice() uint64 {
-	if m != nil {
-		return m.Price
-	}
-	return 0
-}
-
-func (m *XTokenOffer) GetIssuerIdentityPubkey() string {
-	if m != nil {
-		return m.IssuerIdentityPubkey
-	}
-	return ""
-}
-
-func (m *XTokenOffer) GetIssuerHost() string {
-	if m != nil {
-		return m.IssuerHost
-	}
-	return ""
-}
-
-func (m *XTokenOffer) GetBuyerId() string {
-	if m != nil {
-		return m.BuyerId
-	}
-	return ""
-}
-
-func (m *XTokenOffer) GetValidUntilMillis() int64 {
-	if m != nil {
-		return m.ValidUntilMillis
-	}
-	return 0
-}
-
 func init() {
-	proto.RegisterType((*TokenPurchaseRequestResult)(nil), "lnrpc.TokenPurchaseRequestResult")
-	proto.RegisterType((*XTokenOffer)(nil), "lnrpc._TokenOffer")
+	proto.RegisterType((*SignTokenPurchaseRequest)(nil), "issuer.SignTokenPurchaseRequest")
+	proto.RegisterType((*SignTokenPurchaseResponse)(nil), "issuer.SignTokenPurchaseResponse")
 }
 
 func init() { proto.RegisterFile("tokens/issuer/issuer.proto", fileDescriptor_e8faa554d9d56586) }
 
 var fileDescriptor_e8faa554d9d56586 = []byte{
-	// 312 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x91, 0xc9, 0x4e, 0xc3, 0x30,
-	0x10, 0x86, 0x15, 0xba, 0x00, 0xd3, 0x03, 0x95, 0x55, 0x50, 0xe8, 0x85, 0xd2, 0x53, 0x41, 0x22,
-	0x41, 0x85, 0x27, 0xe0, 0x02, 0x3d, 0x00, 0x55, 0x58, 0x84, 0xb8, 0x54, 0x59, 0xdc, 0xc6, 0xaa,
-	0x49, 0x82, 0x67, 0x7c, 0xe8, 0x93, 0xf2, 0x3a, 0x28, 0x13, 0x57, 0x02, 0x21, 0x0e, 0x96, 0x3d,
-	0xdf, 0x3f, 0x8b, 0xfc, 0x0f, 0x0c, 0xa9, 0x5c, 0xcb, 0x02, 0x43, 0x85, 0x68, 0xa5, 0x71, 0x57,
-	0x50, 0x99, 0x92, 0x4a, 0xd1, 0xd1, 0x85, 0xa9, 0xd2, 0xf1, 0x2d, 0x0c, 0x9f, 0xeb, 0xa4, 0xb9,
-	0x35, 0x69, 0x1e, 0xa3, 0x8c, 0xe4, 0xa7, 0x95, 0x48, 0x91, 0x44, 0xab, 0x49, 0x9c, 0x41, 0xbf,
-	0x29, 0x5a, 0xa0, 0x5a, 0x15, 0x31, 0x59, 0x23, 0x7d, 0x6f, 0xe4, 0x4d, 0xf6, 0xa3, 0x83, 0x86,
-	0x3f, 0x6d, 0xf1, 0xf8, 0xcb, 0x83, 0xde, 0x82, 0x5b, 0x3d, 0x2e, 0x97, 0xd2, 0x88, 0x01, 0x74,
-	0x78, 0xba, 0xcb, 0x6f, 0x82, 0x9a, 0x56, 0x46, 0xa5, 0xd2, 0xdf, 0x19, 0x79, 0x93, 0x76, 0xd4,
-	0x04, 0xe2, 0x1a, 0x8e, 0xdc, 0x18, 0x95, 0xc9, 0x82, 0x14, 0x6d, 0x16, 0x95, 0x4d, 0xd6, 0x72,
-	0xe3, 0xb7, 0xb8, 0x78, 0xd0, 0xa8, 0x33, 0x27, 0xce, 0x59, 0x13, 0x27, 0xd0, 0x73, 0x55, 0x79,
-	0x89, 0xe4, 0xb7, 0x39, 0x15, 0x1a, 0x74, 0x57, 0x22, 0x89, 0x63, 0xd8, 0x4b, 0xec, 0x86, 0xbb,
-	0xfa, 0x1d, 0x56, 0x77, 0x39, 0x9e, 0x65, 0xe2, 0x1c, 0xfa, 0xaf, 0xb1, 0x56, 0xd9, 0x4b, 0x41,
-	0x4a, 0xdf, 0x2b, 0xad, 0x15, 0xfa, 0xdd, 0x91, 0x37, 0x69, 0x45, 0x7f, 0xf8, 0xf4, 0x0d, 0xba,
-	0x33, 0x6e, 0x2a, 0x1e, 0xe0, 0xd0, 0xf9, 0xc3, 0x1f, 0xc5, 0xad, 0x69, 0x42, 0x04, 0xec, 0x66,
-	0xf0, 0xc3, 0x80, 0xe1, 0xa9, 0x63, 0xff, 0xdb, 0x7b, 0x33, 0x7d, 0xbf, 0x5c, 0x29, 0xca, 0x6d,
-	0x12, 0xa4, 0xe5, 0x47, 0x58, 0xad, 0xe9, 0x22, 0x8d, 0x31, 0xaf, 0x1f, 0x59, 0xa8, 0x8b, 0xfa,
-	0x98, 0x2a, 0x0d, 0x7f, 0x2d, 0x31, 0xe9, 0xf2, 0xfa, 0xae, 0xbe, 0x03, 0x00, 0x00, 0xff, 0xff,
-	0x5e, 0x24, 0x9f, 0x69, 0xdc, 0x01, 0x00, 0x00,
+	// 230 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0x2a, 0xc9, 0xcf, 0x4e,
+	0xcd, 0x2b, 0xd6, 0xcf, 0x2c, 0x2e, 0x2e, 0x4d, 0x2d, 0x82, 0x52, 0x7a, 0x05, 0x45, 0xf9, 0x25,
+	0xf9, 0x42, 0x6c, 0x10, 0x9e, 0x94, 0x12, 0x54, 0x4d, 0x51, 0x6a, 0x41, 0x4e, 0x66, 0x72, 0x62,
+	0x49, 0x7e, 0x11, 0x12, 0x13, 0xa2, 0x56, 0xc9, 0x83, 0x4b, 0x22, 0x38, 0x33, 0x3d, 0x2f, 0x04,
+	0xa4, 0x32, 0xa0, 0xb4, 0x28, 0x39, 0x23, 0xb1, 0x38, 0x35, 0x28, 0xb5, 0xb0, 0x34, 0xb5, 0xb8,
+	0x44, 0x48, 0x87, 0x8b, 0x35, 0x3f, 0x2d, 0x2d, 0xb5, 0x48, 0x82, 0x51, 0x81, 0x51, 0x83, 0xdb,
+	0x48, 0x4c, 0x0f, 0x49, 0x37, 0x58, 0x83, 0x3f, 0x48, 0x36, 0x08, 0xa2, 0x48, 0xc9, 0x8d, 0x4b,
+	0x12, 0x8b, 0x49, 0xc5, 0x05, 0xf9, 0x79, 0xc5, 0xa9, 0x42, 0x9a, 0x5c, 0x02, 0x10, 0x47, 0xc5,
+	0x17, 0x67, 0xa6, 0xe7, 0x25, 0x96, 0x94, 0x16, 0xa5, 0x82, 0x4d, 0xe5, 0x0c, 0xe2, 0x87, 0x88,
+	0x07, 0xc3, 0x84, 0x8d, 0x92, 0xb8, 0xd8, 0x3c, 0xc1, 0x42, 0x42, 0x11, 0x5c, 0x82, 0x18, 0x26,
+	0x0a, 0x29, 0xe8, 0x41, 0xfd, 0x8a, 0xcb, 0xd9, 0x52, 0x8a, 0x78, 0x54, 0x40, 0x9c, 0xe3, 0x64,
+	0x14, 0x65, 0x90, 0x9e, 0x59, 0x92, 0x51, 0x9a, 0xa4, 0x97, 0x9c, 0x9f, 0xab, 0x5f, 0x90, 0x5d,
+	0xa2, 0x9b, 0x9c, 0x58, 0x9c, 0x01, 0x62, 0xa4, 0xe8, 0xe7, 0xe4, 0x81, 0x70, 0x51, 0x41, 0xb2,
+	0x3e, 0x4a, 0x10, 0x27, 0xb1, 0x81, 0x03, 0xcc, 0x18, 0x10, 0x00, 0x00, 0xff, 0xff, 0x7f, 0x17,
+	0x8c, 0x4f, 0x7a, 0x01, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -196,7 +142,7 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type IssuerClient interface {
 	// Returns token purchase signature for further registration along with offer via Replication Server
-	RequestTokensPurchase(ctx context.Context, in *XTokenOffer, opts ...grpc.CallOption) (*TokenPurchaseRequestResult, error)
+	SignTokenPurchase(ctx context.Context, in *SignTokenPurchaseRequest, opts ...grpc.CallOption) (*SignTokenPurchaseResponse, error)
 }
 
 type issuerClient struct {
@@ -207,9 +153,9 @@ func NewIssuerClient(cc *grpc.ClientConn) IssuerClient {
 	return &issuerClient{cc}
 }
 
-func (c *issuerClient) RequestTokensPurchase(ctx context.Context, in *XTokenOffer, opts ...grpc.CallOption) (*TokenPurchaseRequestResult, error) {
-	out := new(TokenPurchaseRequestResult)
-	err := c.cc.Invoke(ctx, "/lnrpc.Issuer/RequestTokensPurchase", in, out, opts...)
+func (c *issuerClient) SignTokenPurchase(ctx context.Context, in *SignTokenPurchaseRequest, opts ...grpc.CallOption) (*SignTokenPurchaseResponse, error) {
+	out := new(SignTokenPurchaseResponse)
+	err := c.cc.Invoke(ctx, "/issuer.Issuer/SignTokenPurchase", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -219,46 +165,46 @@ func (c *issuerClient) RequestTokensPurchase(ctx context.Context, in *XTokenOffe
 // IssuerServer is the server API for Issuer service.
 type IssuerServer interface {
 	// Returns token purchase signature for further registration along with offer via Replication Server
-	RequestTokensPurchase(context.Context, *XTokenOffer) (*TokenPurchaseRequestResult, error)
+	SignTokenPurchase(context.Context, *SignTokenPurchaseRequest) (*SignTokenPurchaseResponse, error)
 }
 
 // UnimplementedIssuerServer can be embedded to have forward compatible implementations.
 type UnimplementedIssuerServer struct {
 }
 
-func (*UnimplementedIssuerServer) RequestTokensPurchase(ctx context.Context, req *XTokenOffer) (*TokenPurchaseRequestResult, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RequestTokensPurchase not implemented")
+func (*UnimplementedIssuerServer) SignTokenPurchase(ctx context.Context, req *SignTokenPurchaseRequest) (*SignTokenPurchaseResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SignTokenPurchase not implemented")
 }
 
 func RegisterIssuerServer(s *grpc.Server, srv IssuerServer) {
 	s.RegisterService(&_Issuer_serviceDesc, srv)
 }
 
-func _Issuer_RequestTokensPurchase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(XTokenOffer)
+func _Issuer_SignTokenPurchase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SignTokenPurchaseRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(IssuerServer).RequestTokensPurchase(ctx, in)
+		return srv.(IssuerServer).SignTokenPurchase(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/lnrpc.Issuer/RequestTokensPurchase",
+		FullMethod: "/issuer.Issuer/SignTokenPurchase",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(IssuerServer).RequestTokensPurchase(ctx, req.(*XTokenOffer))
+		return srv.(IssuerServer).SignTokenPurchase(ctx, req.(*SignTokenPurchaseRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 var _Issuer_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "lnrpc.Issuer",
+	ServiceName: "issuer.Issuer",
 	HandlerType: (*IssuerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "RequestTokensPurchase",
-			Handler:    _Issuer_RequestTokensPurchase_Handler,
+			MethodName: "SignTokenPurchase",
+			Handler:    _Issuer_SignTokenPurchase_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
