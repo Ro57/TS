@@ -51,7 +51,9 @@ import (
 	"github.com/pkt-cash/pktd/lnd/lnrpc/routerrpc"
 	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/issuer"
 	issuer_mock "github.com/pkt-cash/pktd/lnd/lnrpc/tokens/issuer/mock"
+	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/jwtstore"
 	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/replicator"
+
 	"github.com/pkt-cash/pktd/lnd/lntypes"
 	"github.com/pkt-cash/pktd/lnd/lnwallet"
 	"github.com/pkt-cash/pktd/lnd/lnwallet/btcwallet"
@@ -585,7 +587,7 @@ type rpcServer struct {
 
 	// jwtStore in memory storage of all authorized token with user id
 	// and payload
-	jwtStore map[string]string
+	jwtStore jwtstore.Store
 }
 
 // A compile time check to ensure that rpcServer fully implements the
@@ -6991,18 +6993,29 @@ func (r *rpcServer) connectReplicatorClient(ctx context.Context) (_ replicator.R
 
 	applyJWT := grpc.UnaryClientInterceptor(
 		func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-			fmt.Println(req)
-			fmt.Println(method)
+			var holderID string
 
-			if method == "/lnrpc.Replicator/GetTokenBalances" {
-				getTokenBalancesReq := req.(string)
-				jwt, ok := r.jwtStore[getTokenBalancesReq]
-				if !ok {
-					return errors.New("Undefined jwt id")
-				}
-
-				_ = jwt
+			switch method {
+			case "/lnrpc.Replicator/GetTokenBalances":
+				getTokenBalancesReq := req.(replicator.GetTokenBalancesRequest)
+				holderID = getTokenBalancesReq.HolderId
 			}
+
+			tokenID, err := strconv.ParseUint(holderID, 10, 64)
+			if err != nil {
+				return err
+			}
+
+			jwt, err := r.jwtStore.Find(tokenID)
+			if err != nil {
+				return err
+			}
+
+			expire := time.Unix(int64(jwt.ExpireDate), 0)
+			if expire.After(time.Now()) {
+				return errors.New("JWT expired")
+			}
+
 			return invoker(ctx, method, req, reply, cc, opts...)
 		},
 	)

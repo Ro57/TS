@@ -28,6 +28,7 @@ const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 type GetTokenOffersRequest struct {
 	IssuerId             string      `protobuf:"bytes,1,opt,name=issuer_id,json=issuerId,proto3" json:"issuer_id,omitempty"`
 	Params               *Pagination `protobuf:"bytes,2,opt,name=params,proto3" json:"params,omitempty"`
+	HolderId             string      `protobuf:"bytes,3,opt,name=holder_id,json=holderId,proto3" json:"holder_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`
@@ -404,6 +405,7 @@ func (m *TokenPurchase) GetInitialTxHash() string {
 // is capable to extract all data needed to process the request
 type GetTokenBalancesRequest struct {
 	Params               *Pagination `protobuf:"bytes,1,opt,name=params,proto3" json:"params,omitempty"`
+	HolderId             string      `protobuf:"bytes,3,opt,name=holder_id,json=holderId,proto3" json:"holder_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`

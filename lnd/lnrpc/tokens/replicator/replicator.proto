@@ -31,6 +31,7 @@ service Replicator {
 message GetTokenOffersRequest {
     string issuer_id = 1;
     Pagination params = 2;
+    string holder_id = 3;
 }
 
 message GetTokenOffersResponse {
@@ -100,6 +101,7 @@ message TokenPurchase {
 // is capable to extract all data needed to process the request
 message GetTokenBalancesRequest {
     Pagination params = 1;
+    string holder_id = 3;
 }
 
 message GetTokenBalancesResponse {
