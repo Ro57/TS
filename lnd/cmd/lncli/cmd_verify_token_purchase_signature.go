@@ -51,12 +51,12 @@ func verifyTokenPurchaseSignature(ctx *cli.Context) er.R {
 			IssuerSignature: issuerSignature,
 		},
 	}
-	resp, err := client.VerifyTokenPurchase(context.TODO(), req)
+	_, err := client.VerifyTokenPurchase(context.TODO(), req)
 	if err != nil {
 		return er.Errorf("requesting token purchase signature verification: %s", err)
 	}
 
-	printRespJSON(resp)
+	println("OK")
 
 	return nil
 }

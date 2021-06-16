@@ -57,12 +57,12 @@ func registerTokenPurchase(ctx *cli.Context) er.R {
 			InitialTxHash:   initialTxHash,
 		},
 	}
-	resp, err := client.RegisterTokenPurchase(context.TODO(), req)
+	_, err := client.RegisterTokenPurchase(context.TODO(), req)
 	if err != nil {
 		return er.Errorf("requesting token purchase registration: %s", err)
 	}
 
-	printRespJSON(resp)
+	println("OK")
 
 	return nil
 }
