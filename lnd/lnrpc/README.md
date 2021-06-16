@@ -217,3 +217,9 @@ The following commands are available with `make`:
 * `rpc-check`: Runs both previous commands and makes sure the git work tree is
   not dirty. This can be used to check that the `.proto` files are formatted
   and compiled properly.
+
+## Start replication service
+
+For starting full node with replication serivce we need run
+`./pld --replication-server-addr=":8081"` in `./bin` directiry.
+If you don't have `./bin` directiry then run script `do` in root catalog repository
