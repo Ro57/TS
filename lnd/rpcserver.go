@@ -79,6 +79,7 @@ import (
 	"github.com/pkt-cash/pktd/wire"
 	"github.com/tv42/zbase32"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	"gopkg.in/macaroon-bakery.v2/bakery"
 )
 
@@ -7082,6 +7083,8 @@ func (r *rpcServer) connectReplicatorClient(ctx context.Context) (_ replicator.R
 			if jwt.ExpireDate.After(time.Now()) {
 				return errors.New("JWT expired")
 			}
+
+			metadata.AppendToOutgoingContext(ctx, "jwt", jwt.Token)
 
 			return invoker(ctx, method, req, reply, cc, opts...)
 		},

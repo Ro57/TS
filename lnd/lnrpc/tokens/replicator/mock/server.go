@@ -4,15 +4,25 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strconv"
 	"sync"
 	"time"
 
+	"github.com/dgrijalva/jwt-go/v4"
 	empty "github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
+	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/jwtstore"
 	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/replicator"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+)
+
+// token holders with login password
+var (
+	users      sync.Map
+	jwtStore   *jwtstore.Store
+	signingKey = []byte("SUPER_SECRET")
 )
 
 type Server struct {
@@ -49,6 +59,8 @@ func RunServerServing(host string, stopSig <-chan struct{}) {
 		<-stopSig
 		root.Stop()
 	}()
+
+	jwtStore = jwtstore.New([]jwtstore.JWT{})
 }
 
 // Override method of unimplemented server
@@ -260,6 +272,55 @@ func (s *Server) RegisterTokenPurchase(ctx context.Context, req *replicator.Regi
 	}
 
 	return &empty.Empty{}, nil
+}
+
+func (s *Server) RegisterTokenHolder(ctx context.Context, req *replicator.RegisterRequest) (*empty.Empty, error) {
+	_, ok := users.Load(req.Login)
+	if ok {
+		return nil, status.Error(codes.InvalidArgument, "token holder with this login already exists")
+	}
+
+	users.Store(req.Login, req.Password)
+
+	return &empty.Empty{}, nil
+}
+
+func (s *Server) AuthTokenHolder(ctx context.Context, req *replicator.AuthRequest) (*replicator.AuthResponse, error) {
+
+	password, ok := users.Load(req.Login)
+	if !ok {
+		return nil, status.Error(codes.InvalidArgument, "token holder not registered")
+	}
+
+	if password != req.Password {
+		return nil, status.Error(codes.InvalidArgument, "invalid password")
+	}
+
+	expire := time.Now().Add(time.Minute * 30)
+
+	claims := jwt.StandardClaims{
+		ExpiresAt: jwt.NewTime(float64(expire.Unix())),
+		Issuer:    req.Login,
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signedToken, err := token.SignedString(signingKey)
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	jwtStore.Append(jwtstore.JWT{
+		Token:       signedToken,
+		ExpireDate:  expire,
+		HolderLogin: req.Login,
+	})
+
+	return &replicator.AuthResponse{
+		Jwt:        signedToken,
+		ExpireDate: strconv.FormatInt(expire.Unix(), 10),
+	}, nil
+
 }
 
 type TokenHoldersStoreAPI interface {
