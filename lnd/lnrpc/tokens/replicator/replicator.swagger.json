@@ -27,10 +27,11 @@
     "replicatorAuthResponse": {
       "type": "object",
       "properties": {
-        "jwt": {
-          "type": "string"
-        },
         "expire_date": {
+          "type": "string",
+          "format": "int64"
+        },
+        "jwt": {
           "type": "string"
         }
       },

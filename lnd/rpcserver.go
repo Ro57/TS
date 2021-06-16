@@ -7004,7 +7004,7 @@ func (r *rpcServer) GetTokenBalances(ctx context.Context, req *replicator.GetTok
 	return resp, nil
 }
 
-func (r *rpcServer) AuthTokenHolder(ctx context.Context, req *replicator.AuthRequest) (*replicator.AuthResponse, error) {
+func (r *rpcServer) AuthTokenHolder(ctx context.Context, req *replicator.AuthRequest) (*empty.Empty, error) {
 	client, closeConn, err := r.connectReplicatorClient(ctx)
 	if err != nil {
 		return nil, errors.WithMessage(err, "connecting client to replication server")
@@ -7016,23 +7016,19 @@ func (r *rpcServer) AuthTokenHolder(ctx context.Context, req *replicator.AuthReq
 		return nil, fmt.Errorf("authentication token holder: %s", err)
 	}
 
-	// TODO: Change test value on resp.expreDate after mock will by implemented
-	expireTimestamp, err := strconv.ParseInt("1111111111", 10, 64)
 	if err != nil {
 		return nil, fmt.Errorf("incorrect expiry date: %s", err.Error())
 	}
 
 	jwt := jwtstore.JWT{
 		HolderLogin: req.Login,
-
-		// TODO: Change test value on resp.JWT after mock will by implemented
-		Token:      "11111",
-		ExpireDate: time.Unix(expireTimestamp, 0),
+		Token:       resp.Jwt,
+		ExpireDate:  time.Unix(resp.ExpireDate, 0),
 	}
 
 	r.jwtStore.Append(jwt)
 
-	return resp, nil
+	return &empty.Empty{}, nil
 }
 
 func (r *rpcServer) RegisterTokenHolder(ctx context.Context, req *replicator.RegisterRequest) (*empty.Empty, error) {
@@ -7068,7 +7064,7 @@ func (r *rpcServer) connectReplicatorClient(ctx context.Context) (_ replicator.R
 				getTokenBalancesReq := req.(*replicator.GetTokenBalancesRequest)
 				holderLogin = getTokenBalancesReq.Login
 			default:
-				return nil
+				return invoker(ctx, method, req, reply, cc, opts...)
 			}
 
 			jwt, err := r.jwtStore.Get(holderLogin)
@@ -7076,15 +7072,11 @@ func (r *rpcServer) connectReplicatorClient(ctx context.Context) (_ replicator.R
 				return err
 			}
 
-			if jwt.Token == "" {
-				return errors.New("Token is empty")
-			}
-
-			if jwt.ExpireDate.After(time.Now()) {
+			if jwt.ExpireDate.Before(time.Now()) {
 				return errors.New("JWT expired")
 			}
 
-			metadata.AppendToOutgoingContext(ctx, "jwt", jwt.Token)
+			ctx = metadata.AppendToOutgoingContext(ctx, "jwt", jwt.Token)
 
 			return invoker(ctx, method, req, reply, cc, opts...)
 		},

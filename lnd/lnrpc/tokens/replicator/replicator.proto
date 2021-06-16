@@ -133,8 +133,8 @@ message AuthRequest {
 // We need this dataset to validate jwt which will be needed later when we will handle
 // request with required login data. For this we save in memory jwt. 
 message AuthResponse {
+    int64 expire_date = 2;
     string jwt = 1;
-    string expire_date = 2;
 }
 
 message RegisterRequest {

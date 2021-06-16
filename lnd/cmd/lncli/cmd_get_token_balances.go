@@ -18,7 +18,7 @@ var getTokenBalancesCommand = cli.Command{
 can be achieved by providing additional flags to the command.`,
 
 	Flags: []cli.Flag{
-		cli.UintFlag{
+		cli.StringFlag{
 			Name:  "holder-login",
 			Usage: "(required) Login used as session identifier. Accept only authorized login",
 		},

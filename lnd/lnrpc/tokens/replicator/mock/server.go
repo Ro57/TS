@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"strconv"
 	"sync"
 	"time"
 
@@ -318,7 +317,7 @@ func (s *Server) AuthTokenHolder(ctx context.Context, req *replicator.AuthReques
 
 	return &replicator.AuthResponse{
 		Jwt:        signedToken,
-		ExpireDate: strconv.FormatInt(expire.Unix(), 10),
+		ExpireDate: expire.Unix(),
 	}, nil
 
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkt-cash/pktd/btcutil/er"
 	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/replicator"
@@ -50,11 +51,12 @@ func registerTokenHolder(ctx *cli.Context) er.R {
 		Password: password,
 	}
 
-	resp, err := client.RegisterTokenHolder(context.TODO(), req)
+	_, err = client.RegisterTokenHolder(context.TODO(), req)
 	if err != nil {
 		return er.E(err)
 	}
-	printRespJSON(resp)
+
+	fmt.Println("Registration successful!")
 
 	return nil
 }

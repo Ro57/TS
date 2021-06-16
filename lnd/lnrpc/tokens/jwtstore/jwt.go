@@ -49,16 +49,13 @@ func (s *Store) Remove(login string) error {
 }
 
 func (s *Store) Get(login string) (JWT, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
 
-	for _, t := range s.tokens {
-		if t.HolderLogin == login {
-			return t, nil
-		}
+	pos, err := s.position(login)
+	if err != nil {
+		return JWT{}, err
 	}
 
-	return JWT{}, errLoginNotFound
+	return s.tokens[pos], nil
 }
 
 func (s *Store) Append(token JWT) {
