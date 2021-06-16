@@ -39,6 +39,19 @@ const (
 	defaultUtxoMinConf = 1
 )
 
+func requiredString(ctx *cli.Context, name string) (string, error) {
+	if !ctx.IsSet(name) {
+		return "", fmt.Errorf("flag %v required but not set", name)
+	}
+
+	flagValue := ctx.String(name)
+	if flagValue == "" {
+		return "", fmt.Errorf("flag value %s is empty", name)
+	}
+	return flagValue, nil
+
+}
+
 func printJSON(resp interface{}) {
 	b, err := json.Marshal(resp)
 	if err != nil {

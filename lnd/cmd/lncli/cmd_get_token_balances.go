@@ -19,6 +19,10 @@ can be achieved by providing additional flags to the command.`,
 
 	Flags: []cli.Flag{
 		cli.UintFlag{
+			Name:  "holder-login",
+			Usage: "(required) Login used as session identifier. Accept only authorized login",
+		},
+		cli.UintFlag{
 			Name:  "limit",
 			Usage: "(optional) If a value provided, returned token balances number would be limited to the specified value",
 		},
@@ -39,6 +43,11 @@ func getTokenBalances(ctx *cli.Context) er.R {
 		offset uint64
 	)
 
+	login, err := requiredString(ctx, "holder-login")
+	if err != nil {
+		return er.E(err)
+	}
+
 	// Acquire passed values, that are not zero
 	if v := ctx.Uint64("limit"); v != 0 {
 		limit = v
@@ -49,6 +58,7 @@ func getTokenBalances(ctx *cli.Context) er.R {
 
 	// Request token balances
 	req := &replicator.GetTokenBalancesRequest{
+		Login: login,
 		Params: &replicator.Pagination{
 			Limit:  limit,
 			Offset: offset,
