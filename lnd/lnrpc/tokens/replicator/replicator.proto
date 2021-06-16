@@ -26,12 +26,18 @@ service Replicator {
 
     // Returns current token balances
     rpc GetTokenBalances(GetTokenBalancesRequest) returns (GetTokenBalancesResponse);
+
+    // Authentication user by login password pair, and generate jwt
+    // Call it method after unlock pkt wallet
+    rpc AuthTokenHolder(AuthRequest) returns (AuthResponse);
+
+    // Register new user with passed password and login
+    rpc RegisterTokenHolder(RegisterRequest) returns (google.protobuf.Empty);
 }
 
 message GetTokenOffersRequest {
     string issuer_id = 1;
     Pagination params = 2;
-    string holder_id = 3;
 }
 
 message GetTokenOffersResponse {
@@ -101,7 +107,7 @@ message TokenPurchase {
 // is capable to extract all data needed to process the request
 message GetTokenBalancesRequest {
     Pagination params = 1;
-    string holder_id = 3;
+    string login = 2;
 }
 
 message GetTokenBalancesResponse {
@@ -114,9 +120,24 @@ message TokenBalance {
     uint64 available = 2;
     uint64 frozen = 3;
 }
-
 message Pagination {
     uint64 limit = 1;
     uint64 offset = 2;
 }
 
+message AuthRequest {
+    string login = 1;
+    string password = 2;
+}
+
+// We need this dataset to validate jwt which will be needed later when we will handle
+// request with required login data. For this we save in memory jwt. 
+message AuthResponse {
+    string jwt = 1;
+    string expire_date = 2;
+}
+
+message RegisterRequest {
+    string login = 1;
+    string password = 2;
+}

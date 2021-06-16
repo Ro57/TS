@@ -547,6 +547,13 @@ service Lightning {
 	// Proxies initial request to the replicator for a token purchase registration and further monitoring
     rpc RegisterTokenPurchase(replicator.RegisterTokenPurchaseRequest) returns (google.protobuf.Empty);
 
+	// lncli: `authrokenholder`
+    // Proxies initial request to the replicator for authorize user
+    rpc AuthTokenHolder(replicator.AuthRequest) returns (replicator.AuthResponse);
+
+	// lncli: `registertokenholder`
+    // Proxies initial request to the replicator for register user
+    rpc RegisterTokenHolder(replicator.RegisterRequest) returns (google.protobuf.Empty);
 }
 
 message Utxo {

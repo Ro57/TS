@@ -517,6 +517,24 @@ func MainRPCServerPermissions() map[string][]bakery.Op {
 				Action: "read",
 			},
 		},
+
+		// TODO: research
+		// 	? It is expected to have specific permissions
+		"/lnrpc.Lightning/RegisterTokenHolder": {
+			{
+				Entity: "info",
+				Action: "read",
+			},
+		},
+
+		// TODO: research
+		// 	? It is expected to have specific permissions
+		"/lnrpc.Lightning/AuthTokenHolder": {
+			{
+				Entity: "info",
+				Action: "read",
+			},
+		},
 	}
 }
 
@@ -587,7 +605,7 @@ type rpcServer struct {
 
 	// jwtStore in memory storage of all authorized token with user id
 	// and payload
-	jwtStore jwtstore.Store
+	jwtStore *jwtstore.Store
 }
 
 // A compile time check to ensure that rpcServer fully implements the
@@ -804,6 +822,9 @@ func newRPCServer(
 		serverOpts = append(serverOpts, chainedUnary, chainedStream)
 	}
 
+	// TODO: add default token set
+	jwt := jwtstore.New([]jwtstore.JWT{})
+
 	// Finally, with all the pre-set up complete,  we can create the main
 	// gRPC server, and register the main lnrpc server along side.
 	grpcServer := grpc.NewServer(serverOpts...)
@@ -823,6 +844,7 @@ func newRPCServer(
 		macService:      macService,
 		selfNode:        selfNode.PubKeyBytes,
 		allPermissions:  permissions,
+		jwtStore:        jwt,
 	}
 	lnrpc.RegisterLightningServer(grpcServer, rootRPCServer)
 
@@ -6981,6 +7003,51 @@ func (r *rpcServer) GetTokenBalances(ctx context.Context, req *replicator.GetTok
 	return resp, nil
 }
 
+func (r *rpcServer) AuthTokenHolder(ctx context.Context, req *replicator.AuthRequest) (*replicator.AuthResponse, error) {
+	client, closeConn, err := r.connectReplicatorClient(ctx)
+	if err != nil {
+		return nil, errors.WithMessage(err, "connecting client to replication server")
+	}
+	defer closeConn()
+	resp, err := client.AuthTokenHolder(ctx, req)
+
+	if err != nil {
+		return nil, fmt.Errorf("authentication token holder: %s", err)
+	}
+
+	// TODO: Change test value on resp.expreDate after mock will by implemented
+	expireTimestamp, err := strconv.ParseInt("1111111111", 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("incorrect expiry date: %s", err.Error())
+	}
+
+	jwt := jwtstore.JWT{
+		HolderLogin: req.Login,
+
+		// TODO: Change test value on resp.JWT after mock will by implemented
+		Token:      "11111",
+		ExpireDate: time.Unix(expireTimestamp, 0),
+	}
+
+	r.jwtStore.Append(jwt)
+
+	return resp, nil
+}
+
+func (r *rpcServer) RegisterTokenHolder(ctx context.Context, req *replicator.RegisterRequest) (*empty.Empty, error) {
+	client, closeConn, err := r.connectReplicatorClient(ctx)
+	if err != nil {
+		return nil, errors.WithMessage(err, "connecting client to replication server")
+	}
+	defer closeConn()
+
+	resp, err := client.RegisterTokenHolder(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("token holder registration: %s", err)
+	}
+	return resp, nil
+}
+
 // TODO: optimize
 // 	? Move replication server client connection to the rpc server initialization stage, to keep connection in a persistent way.
 //	  This could be done in the following manner: connection reopening/closing for a while, after some time of inactivity
@@ -6993,26 +7060,26 @@ func (r *rpcServer) connectReplicatorClient(ctx context.Context) (_ replicator.R
 
 	applyJWT := grpc.UnaryClientInterceptor(
 		func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-			var holderID string
+			var holderLogin string
 
 			switch method {
-			case "/lnrpc.Replicator/GetTokenBalances":
-				getTokenBalancesReq := req.(replicator.GetTokenBalancesRequest)
-				holderID = getTokenBalancesReq.HolderId
+			case "/replicator.Replicator/GetTokenBalances":
+				getTokenBalancesReq := req.(*replicator.GetTokenBalancesRequest)
+				holderLogin = getTokenBalancesReq.Login
+			default:
+				return nil
 			}
 
-			tokenID, err := strconv.ParseUint(holderID, 10, 64)
+			jwt, err := r.jwtStore.Get(holderLogin)
 			if err != nil {
 				return err
 			}
 
-			jwt, err := r.jwtStore.Find(tokenID)
-			if err != nil {
-				return err
+			if jwt.Token == "" {
+				return errors.New("Token is empty")
 			}
 
-			expire := time.Unix(int64(jwt.ExpireDate), 0)
-			if expire.After(time.Now()) {
+			if jwt.ExpireDate.After(time.Now()) {
 				return errors.New("JWT expired")
 			}
 
