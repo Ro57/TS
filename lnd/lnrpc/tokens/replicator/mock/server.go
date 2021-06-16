@@ -1,23 +1,54 @@
-package mocks
+package mock
 
 import (
 	"context"
 	"fmt"
+	"net"
+	"sync"
 	"time"
 
+	empty "github.com/golang/protobuf/ptypes/empty"
+	"github.com/pkg/errors"
 	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/replicator"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type Server struct {
 	// Nest unimplemented server implementation in order to satisfy server interface
 	replicator.UnimplementedReplicatorServer
+
+	holders        TokenHoldersStoreAPI
+	holderBalances TokenHolderBalancesStoreAPI
 }
 
-func RegisterServer(root *grpc.Server) {
-	child := &Server{}
-
+func RunServerServing(host string, stopSig <-chan struct{}) {
+	var (
+		child = &Server{
+			holders:        NewTokenHoldersStore(),
+			holderBalances: NewTokenHolderBalancesStore(),
+		}
+		root = grpc.NewServer()
+	)
 	replicator.RegisterReplicatorServer(root, child)
+
+	listener, err := net.Listen("tcp", host)
+	if err != nil {
+		panic(err)
+	}
+
+	go func() {
+		err := root.Serve(listener)
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	go func() {
+		<-stopSig
+		root.Stop()
+	}()
 }
 
 // Override method of unimplemented server
@@ -148,6 +179,166 @@ func (s *Server) GetTokenBalances(ctx context.Context, req *replicator.GetTokenB
 	return resp, nil
 }
 
-// TODO: implement VerifyTokenPurchaseSignature()
+// Override method of unimplemented server
+func (s *Server) VerifyTokenPurchase(ctx context.Context, req *replicator.VerifyTokenPurchaseRequest) (*empty.Empty, error) {
+	// NOTE: is expected to be empty
+	if req.Purchase.InitialTxHash != "" {
+		return nil, status.Error(codes.InvalidArgument, "initial tx hash is provided")
+	}
 
-// TODO: implement RegisterTokenPurchase()
+	if req.Purchase.IssuerSignature == "" {
+		return nil, status.Error(codes.InvalidArgument, "issuer signature not provided")
+	}
+
+	if req.Purchase.Offer == nil {
+		return nil, status.Error(codes.InvalidArgument, "offer's not provided")
+	}
+	if req.Purchase.Offer.Token == "" {
+		return nil, status.Error(codes.InvalidArgument, "offer's token name not provided")
+	}
+	if req.Purchase.Offer.Price == 0 {
+		return nil, status.Error(codes.InvalidArgument, "offer's token price not provided")
+	}
+	if req.Purchase.Offer.TokenHolderLogin == "" {
+		return nil, status.Error(codes.InvalidArgument, "offer's token holder login not provided")
+	}
+	if req.Purchase.Offer.ValidUntilSeconds == 0 {
+		return nil, status.Error(codes.InvalidArgument, "offer's validity until seconds not provided")
+	}
+
+	if req.Purchase.Offer.IssuerInfo == nil {
+		return nil, status.Error(codes.InvalidArgument, "offer's issuer info not provided")
+	}
+	if req.Purchase.Offer.IssuerInfo.Id == "" {
+		return nil, status.Error(codes.InvalidArgument, "offer's issuer id not provided")
+	}
+	if req.Purchase.Offer.IssuerInfo.IdentityPubkey == "" {
+		return nil, status.Error(codes.InvalidArgument, "offer's issuer identity pubkey not provided")
+	}
+	if req.Purchase.Offer.IssuerInfo.Host == "" {
+		return nil, status.Error(codes.InvalidArgument, "offer's issuer host not provided")
+	}
+
+	return &empty.Empty{}, nil
+}
+
+func (s *Server) RegisterTokenPurchase(ctx context.Context, req *replicator.RegisterTokenPurchaseRequest) (*empty.Empty, error) {
+	if req.Purchase.InitialTxHash == "" {
+		return nil, status.Error(codes.InvalidArgument, "initial tx hash not provided")
+	}
+	if req.Purchase.IssuerSignature == "" {
+		return nil, status.Error(codes.InvalidArgument, "issuer signature not provided")
+	}
+
+	if req.Purchase.Offer == nil {
+		return nil, status.Error(codes.InvalidArgument, "offer's not provided")
+	}
+	if req.Purchase.Offer.Token == "" {
+		return nil, status.Error(codes.InvalidArgument, "offer's token name not provided")
+	}
+	if req.Purchase.Offer.Price == 0 {
+		return nil, status.Error(codes.InvalidArgument, "offer's token price not provided")
+	}
+	if req.Purchase.Offer.TokenHolderLogin == "" {
+		return nil, status.Error(codes.InvalidArgument, "offer's token holder login not provided")
+	}
+	if req.Purchase.Offer.ValidUntilSeconds == 0 {
+		return nil, status.Error(codes.InvalidArgument, "offer's validity until seconds not provided")
+	}
+
+	if req.Purchase.Offer.IssuerInfo == nil {
+		return nil, status.Error(codes.InvalidArgument, "offer's issuer info not provided")
+	}
+	if req.Purchase.Offer.IssuerInfo.Id == "" {
+		return nil, status.Error(codes.InvalidArgument, "offer's issuer id not provided")
+	}
+	if req.Purchase.Offer.IssuerInfo.IdentityPubkey == "" {
+		return nil, status.Error(codes.InvalidArgument, "offer's issuer identity pubkey not provided")
+	}
+	if req.Purchase.Offer.IssuerInfo.Host == "" {
+		return nil, status.Error(codes.InvalidArgument, "offer's issuer host not provided")
+	}
+
+	return &empty.Empty{}, nil
+}
+
+type TokenHoldersStoreAPI interface {
+	Insert(TokenHolder) error
+	Has(TokenHolder) bool
+}
+type TokenHoldersStore struct {
+	holders map[TokenHolderLogin]TokenHolder
+	mu      sync.RWMutex
+}
+
+var _ TokenHoldersStoreAPI = (*TokenHoldersStore)(nil)
+
+func NewTokenHoldersStore() *TokenHoldersStore {
+	return &TokenHoldersStore{
+		holders: make(map[TokenHolderLogin]TokenHolder),
+	}
+}
+
+func (s *TokenHoldersStore) Insert(holder TokenHolder) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	_, ok := s.holders[holder.Login]
+	if ok {
+		return errors.Errorf("login duplication: %q", holder.Login)
+	}
+
+	s.holders[holder.Login] = holder
+
+	return nil
+}
+
+func (s *TokenHoldersStore) Has(holder TokenHolder) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	_, ok := s.holders[holder.Login]
+	return ok
+}
+
+type TokenHolderLogin string
+
+type TokenHolder struct {
+	Login    TokenHolderLogin
+	Password string
+}
+
+type TokenHolderBalancesStoreAPI interface {
+	Set(TokenHolderLogin, TokenHolderBalances) error
+	Get(TokenHolderLogin) TokenHolderBalances
+}
+type TokenHolderBalancesStore struct {
+	holders map[TokenHolderLogin]TokenHolderBalances
+	mu      sync.RWMutex
+}
+
+var _ TokenHolderBalancesStoreAPI = (*TokenHolderBalancesStore)(nil)
+
+func NewTokenHolderBalancesStore() *TokenHolderBalancesStore {
+	return &TokenHolderBalancesStore{
+		holders: make(map[TokenHolderLogin]TokenHolderBalances),
+	}
+}
+
+func (s *TokenHolderBalancesStore) Set(login TokenHolderLogin, balances TokenHolderBalances) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.holders[login] = balances
+
+	return nil
+}
+
+func (s *TokenHolderBalancesStore) Get(login TokenHolderLogin) TokenHolderBalances {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return s.holders[login]
+}
+
+type TokenHolderBalances []replicator.TokenBalance
