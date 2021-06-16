@@ -1,42 +1,64 @@
 package jwtstore
 
+// JWTStore in memory storage of all authorized token with user id
+// and payload
+
 import (
 	"errors"
 	"sync"
+	"time"
 )
-
-// JWTStore in memory storage of all authorized token with user id
-// and payload
 
 // JWT is structured datas of token information
 // returned from replicator serive
 type JWT struct {
-	Token      string
-	ExpireDate uint64
-	HolderID   uint64
+	Token       string
+	ExpireDate  time.Time
+	HolderLogin string
 }
 
 // Store contains all token information and implements methods
 // of sync access to this data
 type Store struct {
-	mu     sync.Mutex
+	mu     sync.RWMutex
 	tokens []JWT
 }
 
-func (s *Store) Find(ID uint64) (JWT, error) {
+var errLoginNotFound = errors.New(`
+JWT with given holder login not found.
+Perhaps this session was deleted when the server was restarted and you need a new sesssion`)
+
+func New(tokens []JWT) *Store {
+	store := new(Store)
+	store.tokens = tokens
+
+	return store
+}
+
+func (s *Store) Remove(login string) error {
+	index, err := s.position(login)
+	if err != nil {
+		return err
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	s.tokens = append(s.tokens[:index], s.tokens[index+1:]...)
+	return nil
+}
+
+func (s *Store) Get(login string) (JWT, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	for _, t := range s.tokens {
-		if t.HolderID == ID {
+		if t.HolderLogin == login {
 			return t, nil
 		}
 	}
 
-	return JWT{}, errors.New(`
-	JWT with given holder id not found.
-	Perhaps session with this id was deleted when the server was 
-	restarted and you need a new sesssion`)
+	return JWT{}, errLoginNotFound
 }
 
 func (s *Store) Append(token JWT) {
@@ -44,4 +66,17 @@ func (s *Store) Append(token JWT) {
 	defer s.mu.Unlock()
 
 	s.tokens = append(s.tokens, token)
+}
+
+func (s *Store) position(login string) (int, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	for i, t := range s.tokens {
+		if t.HolderLogin == login {
+			return i, nil
+		}
+	}
+
+	return 0, errLoginNotFound
 }
