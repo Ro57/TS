@@ -50,6 +50,7 @@ import (
 	"github.com/pkt-cash/pktd/lnd/lnrpc/invoicesrpc"
 	"github.com/pkt-cash/pktd/lnd/lnrpc/routerrpc"
 	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/issuer"
+	issuer_mock "github.com/pkt-cash/pktd/lnd/lnrpc/tokens/issuer/mock"
 	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/jwtstore"
 	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/replicator"
 
@@ -6917,6 +6918,14 @@ func (r *rpcServer) GetTokenOffers(ctx context.Context, req *replicator.GetToken
 }
 
 func (r *rpcServer) SignTokenPurchase(ctx context.Context, req *issuer.SignTokenPurchaseRequest) (*issuer.SignTokenPurchaseResponse, error) {
+	// TODO: remove test code
+	stopIssuerServerSig := make(chan struct{})
+	{
+		defer close(stopIssuerServerSig)
+
+		issuer_mock.RunServerServing(req.Offer.IssuerInfo.Host, stopIssuerServerSig)
+	}
+
 	client, closeConn, err := r.connectIssuerClient(ctx, req.Offer.IssuerInfo.Host)
 	if err != nil {
 		return nil, errors.WithMessage(err, "connecting client to issuer server")
@@ -6927,7 +6936,6 @@ func (r *rpcServer) SignTokenPurchase(ctx context.Context, req *issuer.SignToken
 	if err != nil {
 		return nil, fmt.Errorf("requesting token purchase signature: %s", err)
 	}
-
 	return resp, nil
 }
 
@@ -6942,7 +6950,6 @@ func (r *rpcServer) VerifyTokenPurchase(ctx context.Context, req *replicator.Ver
 	if err != nil {
 		return nil, fmt.Errorf("verifying token purchase signature: %s", err)
 	}
-
 	return resp, nil
 }
 
@@ -6957,7 +6964,6 @@ func (r *rpcServer) RegisterTokenPurchase(ctx context.Context, req *replicator.R
 	if err != nil {
 		return nil, fmt.Errorf("registering token purchase: %s", err)
 	}
-
 	return resp, nil
 }
 
@@ -6972,7 +6978,6 @@ func (r *rpcServer) GetTokenBalances(ctx context.Context, req *replicator.GetTok
 	if err != nil {
 		return nil, fmt.Errorf("querying token balances: %s", err)
 	}
-
 	return resp, nil
 }
 
