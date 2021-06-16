@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"net"
 
 	"github.com/lightninglabs/protobuf-hex-display/json"
 	"github.com/pkg/errors"
@@ -16,10 +17,29 @@ type Server struct {
 	issuer.UnimplementedIssuerServer
 }
 
-func RegisterServer(root *grpc.Server) {
-	child := &Server{}
-
+func RunServerServing(host string, stopSig <-chan struct{}) {
+	var (
+		child = &Server{}
+		root  = grpc.NewServer()
+	)
 	issuer.RegisterIssuerServer(root, child)
+
+	listener, err := net.Listen("tcp", host)
+	if err != nil {
+		panic(err)
+	}
+
+	go func() {
+		err := root.Serve(listener)
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	go func() {
+		<-stopSig
+		root.Stop()
+	}()
 }
 
 // Override method of unimplemented server

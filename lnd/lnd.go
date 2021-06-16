@@ -727,20 +727,7 @@ func Main(cfg *Config, lisCfg ListenerCfg, shutdownChan <-chan struct{}) er.R {
 
 	// TODO: remove test code
 	if cfg.Pkt.Active {
-		srv := grpc.NewServer()
-		replicator_mock.RegisterServer(srv)
-
-		listener, err := net.Listen("tcp", cfg.ReplicationServerAddress)
-		if err != nil {
-			panic(err)
-		}
-
-		go func() {
-			err := srv.Serve(listener)
-			if err != nil {
-				panic(err)
-			}
-		}()
+		replicator_mock.RunServerServing(cfg.ReplicationServerAddress, make(<-chan struct{}))
 	}
 
 	// Initialize, and register our implementation of the gRPC interface
