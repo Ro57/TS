@@ -529,7 +529,7 @@ service Lightning {
 
     // lncli: `gettokenbalances`
 	// Proxies initial request to the replicator for available token offers
-    rpc GetTokenBalances(replicator.GetTokenBalancesRequest) returns (replicator.GetTokenBalancesResponse);
+    rpc GetTokenBalances(GetTokenBalancesRequest) returns (replicator.GetTokenBalancesResponse);
 
 	// lncli: `gettokenoffers`
 	// Proxies initial request to the replicator for available issuer token offers
@@ -3793,4 +3793,9 @@ message MacaroonId {
 message Op {
     string entity = 1;
     repeated string actions = 2;
+}
+
+message GetTokenBalancesRequest {
+    replicator.Pagination params = 1;
+    string login = 2;
 }

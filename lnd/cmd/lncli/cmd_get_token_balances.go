@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/pkt-cash/pktd/btcutil/er"
+	"github.com/pkt-cash/pktd/lnd/lnrpc"
 	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/replicator"
 	"github.com/urfave/cli"
 )
@@ -57,13 +58,14 @@ func getTokenBalances(ctx *cli.Context) er.R {
 	}
 
 	// Request token balances
-	req := &replicator.GetTokenBalancesRequest{
+	req := &lnrpc.GetTokenBalancesRequest{
 		Login: login,
 		Params: &replicator.Pagination{
 			Limit:  limit,
 			Offset: offset,
 		},
 	}
+
 	resp, err := client.GetTokenBalances(context.TODO(), req)
 	if err != nil {
 		return er.E(err)

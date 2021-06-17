@@ -603,11 +603,11 @@ type rpcServer struct {
 	// allPermissions is a map of all registered gRPC URIs (including
 	// internal and external subservers) to the permissions they require.
 	allPermissions map[string][]bakery.Op
-
-	// jwtStore in memory storage of all authorized token with user id
-	// and payload
-	jwtStore *jwtstore.Store
 }
+
+// jwtStore in memory storage of all authorized token with user id
+// and payload
+var jwtStore *jwtstore.Store
 
 // A compile time check to ensure that rpcServer fully implements the
 // LightningServer gRPC service.
@@ -812,6 +812,13 @@ func newRPCServer(
 		strmInterceptors, errorLogStreamServerInterceptor(),
 	)
 
+	// TODO: add default token set
+	jwtStore = jwtstore.New([]jwtstore.JWT{})
+
+	// Append authorization interceptior in slice
+	applyJWT := grpc.UnaryServerInterceptor(JWTInterceptor)
+	unaryInterceptors = append(unaryInterceptors, applyJWT)
+
 	// If any interceptors have been set up, add them to the server options.
 	if len(unaryInterceptors) != 0 && len(strmInterceptors) != 0 {
 		chainedUnary := grpc_middleware.WithUnaryServerChain(
@@ -822,9 +829,6 @@ func newRPCServer(
 		)
 		serverOpts = append(serverOpts, chainedUnary, chainedStream)
 	}
-
-	// TODO: add default token set
-	jwt := jwtstore.New([]jwtstore.JWT{})
 
 	// Finally, with all the pre-set up complete,  we can create the main
 	// gRPC server, and register the main lnrpc server along side.
@@ -845,7 +849,6 @@ func newRPCServer(
 		macService:      macService,
 		selfNode:        selfNode.PubKeyBytes,
 		allPermissions:  permissions,
-		jwtStore:        jwt,
 	}
 	lnrpc.RegisterLightningServer(grpcServer, rootRPCServer)
 
@@ -7030,7 +7033,7 @@ func (r *rpcServer) AuthTokenHolder(ctx context.Context, req *replicator.AuthReq
 		ExpireDate:  time.Unix(resp.ExpireDate, 0),
 	}
 
-	r.jwtStore.Append(jwt)
+	jwtStore.Append(jwt)
 
 	return &empty.Empty{}, nil
 }
@@ -7059,40 +7062,12 @@ func (r *rpcServer) connectReplicatorClient(ctx context.Context) (_ replicator.R
 		return nil, nil, errors.New("empty address")
 	}
 
-	applyJWT := grpc.UnaryClientInterceptor(
-		func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-			var holderLogin string
-
-			switch method {
-			case "/replicator.Replicator/GetTokenBalances":
-				getTokenBalancesReq := req.(*lnrpc.GetTokenBalancesRequest)
-				holderLogin = getTokenBalancesReq.Login
-			default:
-				return invoker(ctx, method, req, reply, cc, opts...)
-			}
-
-			jwt, err := r.jwtStore.GetByLogin(holderLogin)
-			if err != nil {
-				return err
-			}
-
-			if jwt.ExpireDate.Before(time.Now()) {
-				return errors.New("JWT expired")
-			}
-
-			ctx = metadata.AppendToOutgoingContext(ctx, "jwt", jwt.Token)
-
-			return invoker(ctx, method, req, reply, cc, opts...)
-		},
-	)
-
 	// TODO: research connection option to be secure for protected methods
 	// 	? Use "r.restDialOpts"
 	conn, err := grpc.DialContext(
 		ctx,
 		r.cfg.ReplicationServerAddress,
 		grpc.WithInsecure(),
-		grpc.WithChainUnaryInterceptor(applyJWT),
 	)
 	if err != nil {
 		return nil, nil, errors.WithMessage(err, "dialing")
@@ -7118,4 +7093,32 @@ func (r *rpcServer) connectIssuerClient(ctx context.Context, address string) (_ 
 	}
 
 	return issuer.NewIssuerClient(conn), conn.Close, nil
+}
+
+func JWTInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	var holderLogin string
+
+	fmt.Println(info.FullMethod)
+
+	switch info.FullMethod {
+	case "/lnrpc.Lightning/GetTokenBalances":
+		getTokenBalancesReq := req.(*lnrpc.GetTokenBalancesRequest)
+		holderLogin = getTokenBalancesReq.Login
+	default:
+		return handler(ctx, req)
+	}
+
+	jwt, err := jwtStore.GetByLogin(holderLogin)
+	if err != nil {
+		return nil, err
+	}
+
+	if jwt.ExpireDate.Before(time.Now()) {
+		return nil, errors.New("JWT expired")
+	}
+
+	ctx = metadata.AppendToOutgoingContext(ctx, "jwt", jwt.Token)
+
+	return handler(ctx, req)
+
 }

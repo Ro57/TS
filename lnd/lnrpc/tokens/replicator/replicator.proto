@@ -107,7 +107,6 @@ message TokenPurchase {
 // is capable to extract all data needed to process the request
 message GetTokenBalancesRequest {
     Pagination params = 1;
-    string login = 2;
 }
 
 message GetTokenBalancesResponse {

@@ -28,6 +28,10 @@ var errLoginNotFound = errors.New(`
 JWT with given holder login not found.
 Perhaps this session was deleted when the server was restarted and you need a new sesssion`)
 
+var errTokenNotFound = errors.New(`
+JWT with given token not found.
+Perhaps this session was deleted when the server was restarted and you need a new sesssion`)
+
 func New(tokens []JWT) *Store {
 	store := new(Store)
 	store.tokens = tokens
@@ -48,7 +52,7 @@ func (s *Store) Remove(login string) error {
 	return nil
 }
 
-func (s *Store) Get(login string) (JWT, error) {
+func (s *Store) GetByLogin(login string) (JWT, error) {
 
 	pos, err := s.position(login)
 	if err != nil {
@@ -56,6 +60,19 @@ func (s *Store) Get(login string) (JWT, error) {
 	}
 
 	return s.tokens[pos], nil
+}
+
+func (s *Store) GetByToken(token string) (JWT, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	for _, t := range s.tokens {
+		if t.Token == token {
+			return t, nil
+		}
+	}
+
+	return JWT{}, errTokenNotFound
 }
 
 func (s *Store) Append(token JWT) {
