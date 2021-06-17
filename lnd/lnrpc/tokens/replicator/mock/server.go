@@ -7,12 +7,22 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dgrijalva/jwt-go/v4"
 	empty "github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
+	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/jwtstore"
 	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/replicator"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+)
+
+// token holders with login password
+var (
+	users      sync.Map
+	jwtStore   *jwtstore.Store
+	signingKey = []byte("SUPER_SECRET")
 )
 
 type Server struct {
@@ -21,6 +31,11 @@ type Server struct {
 
 	holders        TokenHoldersStoreAPI
 	holderBalances TokenHolderBalancesStoreAPI
+}
+
+type loginCliams struct {
+	login string
+	jwt.StandardClaims
 }
 
 func RunServerServing(host string, stopSig <-chan struct{}) {
@@ -49,6 +64,8 @@ func RunServerServing(host string, stopSig <-chan struct{}) {
 		<-stopSig
 		root.Stop()
 	}()
+
+	jwtStore = jwtstore.New([]jwtstore.JWT{})
 }
 
 // Override method of unimplemented server
@@ -144,6 +161,30 @@ func (s *Server) GetTokenBalances(ctx context.Context, req *replicator.GetTokenB
 	const (
 		tokensNum = 100
 	)
+
+	meta, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, status.Error(codes.InvalidArgument, "metadata not provided")
+	}
+
+	tokenSet, ok := meta["jwt"]
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "jwt token is not contained in context")
+	}
+
+	// Get first token. By default MD contain slice of strings
+	// But we need only one jwt
+	tokenHash := tokenSet[0]
+
+	innerJWT, err := jwtStore.GetByToken(tokenHash)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("jwt by token not found: %v", err))
+	}
+
+	if innerJWT.ExpireDate.Before(time.Now()) {
+		return nil, status.Error(codes.ResourceExhausted, fmt.Sprintf("session expired"))
+	}
+
 	balances := make([]*replicator.TokenBalance, 0, tokensNum)
 
 	// Fill mocked token balances. At this time balances are not owned by a specific holder
@@ -260,6 +301,59 @@ func (s *Server) RegisterTokenPurchase(ctx context.Context, req *replicator.Regi
 	}
 
 	return &empty.Empty{}, nil
+}
+
+func (s *Server) RegisterTokenHolder(ctx context.Context, req *replicator.RegisterRequest) (*empty.Empty, error) {
+	_, ok := users.Load(req.Login)
+	if ok {
+		return nil, status.Error(codes.InvalidArgument, "token holder with this login already exists")
+	}
+
+	users.Store(req.Login, req.Password)
+
+	return &empty.Empty{}, nil
+}
+
+func (s *Server) AuthTokenHolder(ctx context.Context, req *replicator.AuthRequest) (*replicator.AuthResponse, error) {
+
+	password, ok := users.Load(req.Login)
+	if !ok {
+		return nil, status.Error(codes.InvalidArgument, "token holder not registered")
+	}
+
+	if password != req.Password {
+		return nil, status.Error(codes.InvalidArgument, "invalid password")
+	}
+
+	expire := time.Now().Add(time.Minute * 30)
+
+	claims := loginCliams{
+		req.Login,
+		jwt.StandardClaims{
+			ExpiresAt: jwt.NewTime(float64(expire.Unix())),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	// eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MjM5MjI1OTksImlzcyI6IjExMSJ9.eaSaGGyxzOLsGaAcQCQgKUwbwKvh9xy35lef1xF89u8
+
+	// eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MjM5MjI1OTksImlzcyI6IjExMSJ9.eaSaGGyxzOLsGaAcQCQgKUwbwKvh9xy35lef1xF89u8
+	signedToken, err := token.SignedString(signingKey)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	jwtStore.Append(jwtstore.JWT{
+		Token:       signedToken,
+		ExpireDate:  expire,
+		HolderLogin: req.Login,
+	})
+
+	return &replicator.AuthResponse{
+		Jwt:        signedToken,
+		ExpireDate: expire.Unix(),
+	}, nil
+
 }
 
 type TokenHoldersStoreAPI interface {

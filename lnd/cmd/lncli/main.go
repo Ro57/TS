@@ -366,6 +366,8 @@ func main() {
 		signTokenPurchaseCommand,
 		verifyTokenPurchaseSignatureCommand,
 		registerTokenPurchaseCommand,
+		authTokenHolderCommand,
+		registerTokenHolderCoomand,
 	}
 
 	// Add any extra commands determined by build flags.

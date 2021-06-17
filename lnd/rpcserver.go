@@ -51,7 +51,9 @@ import (
 	"github.com/pkt-cash/pktd/lnd/lnrpc/routerrpc"
 	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/issuer"
 	issuer_mock "github.com/pkt-cash/pktd/lnd/lnrpc/tokens/issuer/mock"
+	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/jwtstore"
 	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/replicator"
+
 	"github.com/pkt-cash/pktd/lnd/lntypes"
 	"github.com/pkt-cash/pktd/lnd/lnwallet"
 	"github.com/pkt-cash/pktd/lnd/lnwallet/btcwallet"
@@ -77,6 +79,7 @@ import (
 	"github.com/pkt-cash/pktd/wire"
 	"github.com/tv42/zbase32"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	"gopkg.in/macaroon-bakery.v2/bakery"
 )
 
@@ -515,6 +518,24 @@ func MainRPCServerPermissions() map[string][]bakery.Op {
 				Action: "read",
 			},
 		},
+
+		// TODO: research
+		// 	? It is expected to have specific permissions
+		"/lnrpc.Lightning/RegisterTokenHolder": {
+			{
+				Entity: "info",
+				Action: "read",
+			},
+		},
+
+		// TODO: research
+		// 	? It is expected to have specific permissions
+		"/lnrpc.Lightning/AuthTokenHolder": {
+			{
+				Entity: "info",
+				Action: "read",
+			},
+		},
 	}
 }
 
@@ -583,6 +604,10 @@ type rpcServer struct {
 	// internal and external subservers) to the permissions they require.
 	allPermissions map[string][]bakery.Op
 }
+
+// jwtStore in memory storage of all authorized token with user id
+// and payload
+var jwtStore *jwtstore.Store
 
 // A compile time check to ensure that rpcServer fully implements the
 // LightningServer gRPC service.
@@ -786,6 +811,13 @@ func newRPCServer(
 	strmInterceptors = append(
 		strmInterceptors, errorLogStreamServerInterceptor(),
 	)
+
+	// TODO: add default token set
+	jwtStore = jwtstore.New([]jwtstore.JWT{})
+
+	// Append authorization interceptior in slice
+	applyJWT := grpc.UnaryServerInterceptor(JWTInterceptor)
+	unaryInterceptors = append(unaryInterceptors, applyJWT)
 
 	// If any interceptors have been set up, add them to the server options.
 	if len(unaryInterceptors) != 0 && len(strmInterceptors) != 0 {
@@ -6961,16 +6993,61 @@ func (r *rpcServer) RegisterTokenPurchase(ctx context.Context, req *replicator.R
 	return resp, nil
 }
 
-func (r *rpcServer) GetTokenBalances(ctx context.Context, req *replicator.GetTokenBalancesRequest) (*replicator.GetTokenBalancesResponse, error) {
+func (r *rpcServer) GetTokenBalances(ctx context.Context, req *lnrpc.GetTokenBalancesRequest) (*replicator.GetTokenBalancesResponse, error) {
 	client, closeConn, err := r.connectReplicatorClient(ctx)
 	if err != nil {
 		return nil, errors.WithMessage(err, "connecting client to replication server")
 	}
 	defer closeConn()
 
-	resp, err := client.GetTokenBalances(ctx, req)
+	GetTokenBalancesRequest := &replicator.GetTokenBalancesRequest{
+		Params: req.Params,
+	}
+
+	resp, err := client.GetTokenBalances(ctx, GetTokenBalancesRequest)
 	if err != nil {
 		return nil, fmt.Errorf("querying token balances: %s", err)
+	}
+	return resp, nil
+}
+
+func (r *rpcServer) AuthTokenHolder(ctx context.Context, req *replicator.AuthRequest) (*empty.Empty, error) {
+	client, closeConn, err := r.connectReplicatorClient(ctx)
+	if err != nil {
+		return nil, errors.WithMessage(err, "connecting client to replication server")
+	}
+	defer closeConn()
+	resp, err := client.AuthTokenHolder(ctx, req)
+
+	if err != nil {
+		return nil, fmt.Errorf("authentication token holder: %s", err)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("incorrect expiry date: %s", err.Error())
+	}
+
+	jwt := jwtstore.JWT{
+		HolderLogin: req.Login,
+		Token:       resp.Jwt,
+		ExpireDate:  time.Unix(resp.ExpireDate, 0),
+	}
+
+	jwtStore.Append(jwt)
+
+	return &empty.Empty{}, nil
+}
+
+func (r *rpcServer) RegisterTokenHolder(ctx context.Context, req *replicator.RegisterRequest) (*empty.Empty, error) {
+	client, closeConn, err := r.connectReplicatorClient(ctx)
+	if err != nil {
+		return nil, errors.WithMessage(err, "connecting client to replication server")
+	}
+	defer closeConn()
+
+	resp, err := client.RegisterTokenHolder(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("token holder registration: %s", err)
 	}
 	return resp, nil
 }
@@ -6987,11 +7064,14 @@ func (r *rpcServer) connectReplicatorClient(ctx context.Context) (_ replicator.R
 
 	// TODO: research connection option to be secure for protected methods
 	// 	? Use "r.restDialOpts"
-	conn, err := grpc.DialContext(ctx, r.cfg.ReplicationServerAddress, grpc.WithInsecure())
+	conn, err := grpc.DialContext(
+		ctx,
+		r.cfg.ReplicationServerAddress,
+		grpc.WithInsecure(),
+	)
 	if err != nil {
 		return nil, nil, errors.WithMessage(err, "dialing")
 	}
-
 	return replicator.NewReplicatorClient(conn), conn.Close, nil
 }
 
@@ -7013,4 +7093,34 @@ func (r *rpcServer) connectIssuerClient(ctx context.Context, address string) (_ 
 	}
 
 	return issuer.NewIssuerClient(conn), conn.Close, nil
+}
+
+func JWTInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	var holderLogin string
+
+	switch info.FullMethod {
+	// TODO: Expend authorize method poll
+	// ? /lnrpc.Lightning/RegisterTokenPurchase
+	// ? /lnrpc.Lightning/VerifyTokenPurchase
+
+	case "/lnrpc.Lightning/GetTokenBalances":
+		getTokenBalancesReq := req.(*lnrpc.GetTokenBalancesRequest)
+		holderLogin = getTokenBalancesReq.Login
+	default:
+		return handler(ctx, req)
+	}
+
+	jwt, err := jwtStore.GetByLogin(holderLogin)
+	if err != nil {
+		return nil, err
+	}
+
+	if jwt.ExpireDate.Before(time.Now()) {
+		return nil, errors.New("JWT expired")
+	}
+
+	ctx = metadata.AppendToOutgoingContext(ctx, "jwt", jwt.Token)
+
+	return handler(ctx, req)
+
 }
