@@ -6990,14 +6990,18 @@ func (r *rpcServer) RegisterTokenPurchase(ctx context.Context, req *replicator.R
 	return resp, nil
 }
 
-func (r *rpcServer) GetTokenBalances(ctx context.Context, req *replicator.GetTokenBalancesRequest) (*replicator.GetTokenBalancesResponse, error) {
+func (r *rpcServer) GetTokenBalances(ctx context.Context, req *lnrpc.GetTokenBalancesRequest) (*replicator.GetTokenBalancesResponse, error) {
 	client, closeConn, err := r.connectReplicatorClient(ctx)
 	if err != nil {
 		return nil, errors.WithMessage(err, "connecting client to replication server")
 	}
 	defer closeConn()
 
-	resp, err := client.GetTokenBalances(ctx, req)
+	GetTokenBalancesRequest := &replicator.GetTokenBalancesRequest{
+		Params: req.Params,
+	}
+
+	resp, err := client.GetTokenBalances(ctx, GetTokenBalancesRequest)
 	if err != nil {
 		return nil, fmt.Errorf("querying token balances: %s", err)
 	}
@@ -7061,13 +7065,13 @@ func (r *rpcServer) connectReplicatorClient(ctx context.Context) (_ replicator.R
 
 			switch method {
 			case "/replicator.Replicator/GetTokenBalances":
-				getTokenBalancesReq := req.(*replicator.GetTokenBalancesRequest)
+				getTokenBalancesReq := req.(*lnrpc.GetTokenBalancesRequest)
 				holderLogin = getTokenBalancesReq.Login
 			default:
 				return invoker(ctx, method, req, reply, cc, opts...)
 			}
 
-			jwt, err := r.jwtStore.Get(holderLogin)
+			jwt, err := r.jwtStore.GetByLogin(holderLogin)
 			if err != nil {
 				return err
 			}
