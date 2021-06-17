@@ -7098,9 +7098,11 @@ func (r *rpcServer) connectIssuerClient(ctx context.Context, address string) (_ 
 func JWTInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 	var holderLogin string
 
-	fmt.Println(info.FullMethod)
-
 	switch info.FullMethod {
+	// TODO: Expend authorize method poll
+	// ? /lnrpc.Lightning/RegisterTokenPurchase
+	// ? /lnrpc.Lightning/VerifyTokenPurchase
+
 	case "/lnrpc.Lightning/GetTokenBalances":
 		getTokenBalancesReq := req.(*lnrpc.GetTokenBalancesRequest)
 		holderLogin = getTokenBalancesReq.Login
