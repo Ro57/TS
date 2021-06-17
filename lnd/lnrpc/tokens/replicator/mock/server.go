@@ -14,6 +14,7 @@ import (
 	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/replicator"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -155,7 +156,55 @@ func (s *Server) GetTokenBalances(ctx context.Context, req *replicator.GetTokenB
 	const (
 		tokensNum = 100
 	)
+
+	innerJWT, err := jwtStore.Get(req.Login)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("jwt by login not found: %v", err))
+	}
+
 	balances := make([]*replicator.TokenBalance, 0, tokensNum)
+
+	meta, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, status.Error(codes.InvalidArgument, "metadata not provided")
+	}
+
+	tokenSet, ok := meta["jwt"]
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "jwt token is not contained in context")
+	}
+
+	// Get first token. By default MD contain slice of strings.
+	// But we send only one jwt
+	tokenHash := tokenSet[0]
+
+	token, err := jwt.ParseWithClaims(tokenHash, &jwt.StandardClaims{}, func(t *jwt.Token) (interface{}, error) {
+		return []byte(signingKey), nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, fmt.Sprintf("jwt parse fail: %v", err))
+	}
+
+	claims, ok := token.Claims.(*jwt.StandardClaims)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, fmt.Sprintf("jwt cast fail: %v", err))
+	}
+
+	if claims.ExpiresAt.Time.Unix() != innerJWT.ExpireDate.Unix() {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("expire time is invalid, expected %v but get %v", claims.ExpiresAt.Time.Unix(), innerJWT.ExpireDate.Unix()))
+	}
+
+	if claims.Issuer != innerJWT.HolderLogin {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("login is invalid: %v", err))
+	}
+
+	if tokenHash != innerJWT.Token {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("token is invalid: %v", err))
+	}
+
+	if claims.ExpiresAt.Before(time.Now()) {
+		return nil, status.Error(codes.ResourceExhausted, fmt.Sprintf("session expired: %v", err))
+	}
 
 	// Fill mocked token balances. At this time balances are not owned by a specific holder
 	for i := tokensNum; i > 0; i-- {
@@ -303,8 +352,10 @@ func (s *Server) AuthTokenHolder(ctx context.Context, req *replicator.AuthReques
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, err := token.SignedString(signingKey)
+	// eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MjM5MjI1OTksImlzcyI6IjExMSJ9.eaSaGGyxzOLsGaAcQCQgKUwbwKvh9xy35lef1xF89u8
 
+	// eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MjM5MjI1OTksImlzcyI6IjExMSJ9.eaSaGGyxzOLsGaAcQCQgKUwbwKvh9xy35lef1xF89u8
+	signedToken, err := token.SignedString(signingKey)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
