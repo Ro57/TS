@@ -44,7 +44,7 @@ func getTokenBalances(ctx *cli.Context) er.R {
 		offset uint64
 	)
 
-	login, err := requiredString(ctx, "holder-login")
+	login, err := parseRequiredString(ctx, "holder-login")
 	if err != nil {
 		return er.E(err)
 	}

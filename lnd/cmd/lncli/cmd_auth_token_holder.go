@@ -35,12 +35,12 @@ func authTokenHolder(ctx *cli.Context) er.R {
 	client, cleanUp := getClient(ctx)
 	defer cleanUp()
 
-	login, err := requiredString(ctx, "login")
+	login, err := parseRequiredString(ctx, "login")
 	if err != nil {
 		return er.E(err)
 	}
 
-	password, err := requiredString(ctx, "password")
+	password, err := parseRequiredString(ctx, "password")
 	if err != nil {
 		return er.E(err)
 	}

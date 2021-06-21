@@ -39,17 +39,43 @@ const (
 	defaultUtxoMinConf = 1
 )
 
-func requiredString(ctx *cli.Context, name string) (string, error) {
+func parseRequiredString(ctx *cli.Context, name string) (string, error) {
 	if !ctx.IsSet(name) {
 		return "", fmt.Errorf("flag %v required but not set", name)
 	}
 
 	flagValue := ctx.String(name)
 	if flagValue == "" {
-		return "", fmt.Errorf("flag value %s is empty", name)
+		return "", fmt.Errorf("empty %q argument provided", name)
 	}
-	return flagValue, nil
 
+	return flagValue, nil
+}
+
+func parseRequiredUint64(ctx *cli.Context, name string) (uint64, error) {
+	if !ctx.IsSet(name) {
+		return 0, fmt.Errorf("flag %v required but not set", name)
+	}
+
+	flagValue := ctx.Uint64(name)
+	if flagValue == 0 {
+		return 0, fmt.Errorf("empty %q argument provided", name)
+	}
+
+	return flagValue, nil
+}
+
+func parseRequiredInt64(ctx *cli.Context, name string) (int64, error) {
+	if !ctx.IsSet(name) {
+		return 0, fmt.Errorf("flag %v required but not set", name)
+	}
+
+	flagValue := ctx.Int64(name)
+	if flagValue == 0 {
+		return 0, fmt.Errorf("empty %q argument provided", name)
+	}
+
+	return flagValue, nil
 }
 
 func printJSON(resp interface{}) {
