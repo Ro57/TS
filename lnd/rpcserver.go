@@ -123,6 +123,10 @@ var (
 			Entity: "macaroon",
 			Action: "read",
 		},
+		{
+			Entity: "proxy",
+			Action: "read",
+		},
 	}
 
 	// writePermissions is a slice of all entities that allow write
@@ -166,6 +170,10 @@ var (
 		},
 		{
 			Entity: "macaroon",
+			Action: "write",
+		},
+		{
+			Entity: "proxy",
 			Action: "write",
 		},
 	}
@@ -482,7 +490,7 @@ func MainRPCServerPermissions() map[string][]bakery.Op {
 		"/lnrpc.Lightning/GetTokenOffers": {
 			{
 				// TODO: inspect entity and action usage
-				Entity: "info",
+				Entity: "proxy",
 				Action: "read",
 			},
 		},
@@ -490,7 +498,7 @@ func MainRPCServerPermissions() map[string][]bakery.Op {
 		// 	? It is expected to have specific permissions
 		"/lnrpc.Lightning/GetTokenBalances": {
 			{
-				Entity: "info",
+				Entity: "proxy",
 				Action: "read",
 			},
 		},
@@ -498,7 +506,7 @@ func MainRPCServerPermissions() map[string][]bakery.Op {
 		// 	? It is expected to have specific permissions
 		"/lnrpc.Lightning/SignTokenPurchase": {
 			{
-				Entity: "info",
+				Entity: "proxy",
 				Action: "read",
 			},
 		},
@@ -506,7 +514,7 @@ func MainRPCServerPermissions() map[string][]bakery.Op {
 		// 	? It is expected to have specific permissions
 		"/lnrpc.Lightning/VerifyTokenPurchase": {
 			{
-				Entity: "info",
+				Entity: "proxy",
 				Action: "read",
 			},
 		},
@@ -514,7 +522,7 @@ func MainRPCServerPermissions() map[string][]bakery.Op {
 		// 	? It is expected to have specific permissions
 		"/lnrpc.Lightning/RegisterTokenPurchase": {
 			{
-				Entity: "info",
+				Entity: "proxy",
 				Action: "read",
 			},
 		},
@@ -523,8 +531,8 @@ func MainRPCServerPermissions() map[string][]bakery.Op {
 		// 	? It is expected to have specific permissions
 		"/lnrpc.Lightning/RegisterTokenHolder": {
 			{
-				Entity: "info",
-				Action: "read",
+				Entity: "proxy",
+				Action: "write",
 			},
 		},
 
@@ -532,8 +540,8 @@ func MainRPCServerPermissions() map[string][]bakery.Op {
 		// 	? It is expected to have specific permissions
 		"/lnrpc.Lightning/AuthTokenHolder": {
 			{
-				Entity: "info",
-				Action: "read",
+				Entity: "proxy",
+				Action: "write",
 			},
 		},
 	}
@@ -7098,11 +7106,13 @@ func (r *rpcServer) connectIssuerClient(ctx context.Context, address string) (_ 
 func JWTInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 	var holderLogin string
 
-	switch info.FullMethod {
 	// TODO: Expend authorize method poll
 	// ? /lnrpc.Lightning/RegisterTokenPurchase
 	// ? /lnrpc.Lightning/VerifyTokenPurchase
 
+	fmt.Println(info.FullMethod)
+
+	switch info.FullMethod {
 	case "/lnrpc.Lightning/GetTokenBalances":
 		getTokenBalancesReq := req.(*lnrpc.GetTokenBalancesRequest)
 		holderLogin = getTokenBalancesReq.Login
