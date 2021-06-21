@@ -6973,6 +6973,28 @@ func (r *rpcServer) SignTokenPurchase(ctx context.Context, req *issuer.SignToken
 	return resp, nil
 }
 
+func (r *rpcServer) SignTokenSell(ctx context.Context, req *issuer.SignTokenSellRequest) (*issuer.SignTokenSellResponse, error) {
+	// TODO: remove test code
+	stopIssuerServerSig := make(chan struct{})
+	{
+		defer close(stopIssuerServerSig)
+
+		issuer_mock.RunServerServing(req.Offer.IssuerInfo.Host, stopIssuerServerSig)
+	}
+
+	client, closeConn, err := r.connectIssuerClient(ctx, req.Offer.IssuerInfo.Host)
+	if err != nil {
+		return nil, errors.WithMessage(err, "connecting client to issuer server")
+	}
+	defer closeConn()
+
+	resp, err := client.SignTokenSell(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("requesting token sell signature: %s", err)
+	}
+	return resp, nil
+}
+
 func (r *rpcServer) VerifyTokenPurchase(ctx context.Context, req *replicator.VerifyTokenPurchaseRequest) (*empty.Empty, error) {
 	client, closeConn, err := r.connectReplicatorClient(ctx)
 	if err != nil {
@@ -6987,6 +7009,20 @@ func (r *rpcServer) VerifyTokenPurchase(ctx context.Context, req *replicator.Ver
 	return resp, nil
 }
 
+func (r *rpcServer) VerifyTokenSell(ctx context.Context, req *replicator.VerifyTokenSellRequest) (*empty.Empty, error) {
+	client, closeConn, err := r.connectReplicatorClient(ctx)
+	if err != nil {
+		return nil, errors.WithMessage(err, "connecting client to replication server")
+	}
+	defer closeConn()
+
+	resp, err := client.VerifyTokenSell(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("verifying token sell signature: %s", err)
+	}
+	return resp, nil
+}
+
 func (r *rpcServer) RegisterTokenPurchase(ctx context.Context, req *replicator.RegisterTokenPurchaseRequest) (*empty.Empty, error) {
 	client, closeConn, err := r.connectReplicatorClient(ctx)
 	if err != nil {
@@ -6997,6 +7033,20 @@ func (r *rpcServer) RegisterTokenPurchase(ctx context.Context, req *replicator.R
 	resp, err := client.RegisterTokenPurchase(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("registering token purchase: %s", err)
+	}
+	return resp, nil
+}
+
+func (r *rpcServer) RegisterTokenSell(ctx context.Context, req *replicator.RegisterTokenSellRequest) (*empty.Empty, error) {
+	client, closeConn, err := r.connectReplicatorClient(ctx)
+	if err != nil {
+		return nil, errors.WithMessage(err, "connecting client to replication server")
+	}
+	defer closeConn()
+
+	resp, err := client.RegisterTokenSell(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("registering token sell: %s", err)
 	}
 	return resp, nil
 }
