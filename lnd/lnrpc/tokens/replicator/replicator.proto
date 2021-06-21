@@ -20,9 +20,17 @@ service Replicator {
     // method should be called before channel initialization
     rpc VerifyTokenPurchase(VerifyTokenPurchaseRequest) returns (google.protobuf.Empty);
 
+    // Verifies a signature of an issuer for this token sell. This
+    // method should be called before channel initialization
+    rpc VerifyTokenSell(VerifyTokenSellRequest) returns (google.protobuf.Empty);
+
     // Registers token purchase to be tracked on the blockchain 
     // right after some necessary token purchase checks
     rpc RegisterTokenPurchase(RegisterTokenPurchaseRequest) returns (google.protobuf.Empty);
+
+    // Registers token sell to be tracked on the blockchain 
+    // right after some necessary token sell checks
+    rpc RegisterTokenSell(RegisterTokenSellRequest) returns (google.protobuf.Empty);
 
     // Returns current token balances
     rpc GetTokenBalances(GetTokenBalancesRequest) returns (GetTokenBalancesResponse);
@@ -61,11 +69,17 @@ message TokenOffer {
     // (e.g. gettokenoffers, verifytokenpurchasesignature)
     string token_holder_login = 4;
 
+    // It is assumed that the each registered token holder login is unique
+    // 
+    // Value of this field may be empty or filled depending on context 
+    // (e.g. gettokenoffers, verifytokenpurchasesignature)
+    string token_buyer_login = 5;
+
     // This field protects issuers from such a case, when potential buyer successfully acquires dozens 
     // of signatures just in case if that issuer would raise up the price later. If a Token Wallet 
     // holder would like to open channel with an outdated offer, Replicator would reject to register 
     // this purchase and buyer stays unprotected
-    int64 valid_until_seconds = 5;
+    int64 valid_until_seconds = 6;
 }
 
 message IssuerInfo {
@@ -84,8 +98,16 @@ message VerifyTokenPurchaseRequest {
     TokenPurchase purchase = 1;
 }
 
+message VerifyTokenSellRequest {
+    TokenPurchase sell = 1;
+}
+
 message RegisterTokenPurchaseRequest {
     TokenPurchase purchase = 1;
+}
+
+message RegisterTokenSellRequest {
+    TokenPurchase sell = 1;
 }
 
 message TokenPurchase {
@@ -101,6 +123,7 @@ message TokenPurchase {
 
     string initial_tx_hash = 3;
 }
+
 
 // NOTE: we don't provide any token holder identification since the reqeuest is
 // authorized with JWT applied to the request metadata. It means, that replicator

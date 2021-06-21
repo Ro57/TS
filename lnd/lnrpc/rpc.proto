@@ -539,13 +539,25 @@ service Lightning {
 	// Proxies initial request to the issuer for a signature
     rpc SignTokenPurchase(issuer.SignTokenPurchaseRequest) returns (issuer.SignTokenPurchaseResponse);
 
+    // lncli: `signtokensell`
+	// Proxies initial request to the issuer for a signature
+    rpc SignTokenSell(issuer.SignTokenSellRequest) returns (issuer.SignTokenSellResponse);
+
 	// lncli: `verifytokenpurchase`
 	// Proxies initial request to the replicator for an issuer's signature verification
     rpc VerifyTokenPurchase(replicator.VerifyTokenPurchaseRequest) returns (google.protobuf.Empty);
 
+	// lncli: `verifytokensell`
+	// Proxies initial request to the replicator for an issuer's signature verification
+    rpc VerifyTokenSell(replicator.VerifyTokenSellRequest) returns (google.protobuf.Empty);
+
 	// lncli: `registertokenpurchase`
 	// Proxies initial request to the replicator for a token purchase registration and further monitoring
     rpc RegisterTokenPurchase(replicator.RegisterTokenPurchaseRequest) returns (google.protobuf.Empty);
+    
+    // lncli: `registertokensell`
+	// Proxies initial request to the replicator for a token purchase registration and further monitoring
+    rpc RegisterTokenSell(replicator.RegisterTokenSellRequest) returns (google.protobuf.Empty);
 
 	// lncli: `authrokenholder`
     // Proxies initial request to the replicator for authorize user

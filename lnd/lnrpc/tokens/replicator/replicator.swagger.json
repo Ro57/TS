@@ -132,6 +132,11 @@
           "description": "Value of this field may be empty or filled depending on context \n(e.g. gettokenoffers, verifytokenpurchasesignature)",
           "title": "It is assumed that the each registered token holder login is unique"
         },
+        "token_buyer_login": {
+          "type": "string",
+          "description": "Value of this field may be empty or filled depending on context \n(e.g. gettokenoffers, verifytokenpurchasesignature)",
+          "title": "It is assumed that the each registered token holder login is unique"
+        },
         "valid_until_seconds": {
           "type": "string",
           "format": "int64",
