@@ -487,63 +487,46 @@ func MainRPCServerPermissions() map[string][]bakery.Op {
 			Entity: "offchain",
 			Action: "write",
 		}},
-		"/lnrpc.Lightning/GetTokenOffers": {
-			{
-				// TODO: inspect entity and action usage
-				Entity: "proxy",
-				Action: "read",
-			},
-		},
-		// TODO: research
-		// 	? It is expected to have specific permissions
-		"/lnrpc.Lightning/GetTokenBalances": {
-			{
-				Entity: "proxy",
-				Action: "read",
-			},
-		},
-		// TODO: research
-		// 	? It is expected to have specific permissions
-		"/lnrpc.Lightning/SignTokenPurchase": {
-			{
-				Entity: "proxy",
-				Action: "read",
-			},
-		},
-		// TODO: research
-		// 	? It is expected to have specific permissions
-		"/lnrpc.Lightning/VerifyTokenPurchase": {
-			{
-				Entity: "proxy",
-				Action: "read",
-			},
-		},
-		// TODO: research
-		// 	? It is expected to have specific permissions
-		"/lnrpc.Lightning/RegisterTokenPurchase": {
-			{
-				Entity: "proxy",
-				Action: "read",
-			},
-		},
-
-		// TODO: research
-		// 	? It is expected to have specific permissions
-		"/lnrpc.Lightning/RegisterTokenHolder": {
-			{
-				Entity: "proxy",
-				Action: "write",
-			},
-		},
-
-		// TODO: research
-		// 	? It is expected to have specific permissions
-		"/lnrpc.Lightning/AuthTokenHolder": {
-			{
-				Entity: "proxy",
-				Action: "write",
-			},
-		},
+		"/lnrpc.Lightning/GetTokenOffers": {{
+			Entity: "proxy",
+			Action: "read",
+		}},
+		"/lnrpc.Lightning/GetTokenBalances": {{
+			Entity: "proxy",
+			Action: "read",
+		}},
+		"/lnrpc.Lightning/SignTokenPurchase": {{
+			Entity: "proxy",
+			Action: "read",
+		}},
+		"/lnrpc.Lightning/SignTokenSell": {{
+			Entity: "proxy",
+			Action: "read",
+		}},
+		"/lnrpc.Lightning/VerifyTokenPurchase": {{
+			Entity: "proxy",
+			Action: "read",
+		}},
+		"/lnrpc.Lightning/VerifyTokenSell": {{
+			Entity: "proxy",
+			Action: "read",
+		}},
+		"/lnrpc.Lightning/RegisterTokenPurchase": {{
+			Entity: "proxy",
+			Action: "read",
+		}},
+		"/lnrpc.Lightning/RegisterTokenSell": {{
+			Entity: "proxy",
+			Action: "read",
+		}},
+		"/lnrpc.Lightning/RegisterTokenHolder": {{
+			Entity: "proxy",
+			Action: "write",
+		}},
+		"/lnrpc.Lightning/AuthTokenHolder": {{
+			Entity: "proxy",
+			Action: "write",
+		}},
 	}
 }
 

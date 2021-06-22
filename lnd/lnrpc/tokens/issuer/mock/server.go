@@ -57,3 +57,18 @@ func (s *Server) SignTokenPurchase(ctx context.Context, req *issuer.SignTokenPur
 
 	return resp, nil
 }
+
+func (s *Server) SignTokenSell(ctx context.Context, req *issuer.SignTokenSellRequest) (*issuer.SignTokenSellResponse, error) {
+	bytes, err := json.Marshal(req)
+	if err != nil {
+		return nil, errors.WithMessage(err, "marshalling request")
+	}
+
+	hash := sha256.Sum256(bytes)
+
+	resp := &issuer.SignTokenSellResponse{
+		IssuerSignature: fmt.Sprintf("%x", hash),
+	}
+
+	return resp, nil
+}

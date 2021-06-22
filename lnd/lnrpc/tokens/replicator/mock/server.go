@@ -263,6 +263,51 @@ func (s *Server) VerifyTokenPurchase(ctx context.Context, req *replicator.Verify
 	return &empty.Empty{}, nil
 }
 
+func (s *Server) VerifyTokenSell(ctx context.Context, req *replicator.VerifyTokenSellRequest) (*empty.Empty, error) {
+	// NOTE: is expected to be empty
+	if req.Sell.InitialTxHash != "" {
+		return nil, status.Error(codes.InvalidArgument, "initial tx hash is provided")
+	}
+
+	if req.Sell.IssuerSignature == "" {
+		return nil, status.Error(codes.InvalidArgument, "issuer signature not provided")
+	}
+
+	if req.Sell.Offer == nil {
+		return nil, status.Error(codes.InvalidArgument, "offer's not provided")
+	}
+	if req.Sell.Offer.Token == "" {
+		return nil, status.Error(codes.InvalidArgument, "offer's token name not provided")
+	}
+	if req.Sell.Offer.Price == 0 {
+		return nil, status.Error(codes.InvalidArgument, "offer's token price not provided")
+	}
+	if req.Sell.Offer.TokenHolderLogin == "" {
+		return nil, status.Error(codes.InvalidArgument, "offer's token holder login not provided")
+	}
+	if req.Sell.Offer.TokenBuyerLogin == "" {
+		return nil, status.Error(codes.InvalidArgument, "offer's token buyer login not provided")
+	}
+	if req.Sell.Offer.ValidUntilSeconds == 0 {
+		return nil, status.Error(codes.InvalidArgument, "offer's validity until seconds not provided")
+	}
+
+	if req.Sell.Offer.IssuerInfo == nil {
+		return nil, status.Error(codes.InvalidArgument, "offer's issuer info not provided")
+	}
+	if req.Sell.Offer.IssuerInfo.Id == "" {
+		return nil, status.Error(codes.InvalidArgument, "offer's issuer id not provided")
+	}
+	if req.Sell.Offer.IssuerInfo.IdentityPubkey == "" {
+		return nil, status.Error(codes.InvalidArgument, "offer's issuer identity pubkey not provided")
+	}
+	if req.Sell.Offer.IssuerInfo.Host == "" {
+		return nil, status.Error(codes.InvalidArgument, "offer's issuer host not provided")
+	}
+
+	return &empty.Empty{}, nil
+}
+
 func (s *Server) RegisterTokenPurchase(ctx context.Context, req *replicator.RegisterTokenPurchaseRequest) (*empty.Empty, error) {
 	if req.Purchase.InitialTxHash == "" {
 		return nil, status.Error(codes.InvalidArgument, "initial tx hash not provided")
@@ -297,6 +342,49 @@ func (s *Server) RegisterTokenPurchase(ctx context.Context, req *replicator.Regi
 		return nil, status.Error(codes.InvalidArgument, "offer's issuer identity pubkey not provided")
 	}
 	if req.Purchase.Offer.IssuerInfo.Host == "" {
+		return nil, status.Error(codes.InvalidArgument, "offer's issuer host not provided")
+	}
+
+	return &empty.Empty{}, nil
+}
+
+func (s *Server) RegisterTokenSell(ctx context.Context, req *replicator.RegisterTokenSellRequest) (*empty.Empty, error) {
+	if req.Sell.InitialTxHash == "" {
+		return nil, status.Error(codes.InvalidArgument, "initial tx hash not provided")
+	}
+	if req.Sell.IssuerSignature == "" {
+		return nil, status.Error(codes.InvalidArgument, "issuer signature not provided")
+	}
+
+	if req.Sell.Offer == nil {
+		return nil, status.Error(codes.InvalidArgument, "offer's not provided")
+	}
+	if req.Sell.Offer.Token == "" {
+		return nil, status.Error(codes.InvalidArgument, "offer's token name not provided")
+	}
+	if req.Sell.Offer.Price == 0 {
+		return nil, status.Error(codes.InvalidArgument, "offer's token price not provided")
+	}
+	if req.Sell.Offer.TokenHolderLogin == "" {
+		return nil, status.Error(codes.InvalidArgument, "offer's token holder login not provided")
+	}
+	if req.Sell.Offer.TokenBuyerLogin == "" {
+		return nil, status.Error(codes.InvalidArgument, "offer's token buyer login not provided")
+	}
+	if req.Sell.Offer.ValidUntilSeconds == 0 {
+		return nil, status.Error(codes.InvalidArgument, "offer's validity until seconds not provided")
+	}
+
+	if req.Sell.Offer.IssuerInfo == nil {
+		return nil, status.Error(codes.InvalidArgument, "offer's issuer info not provided")
+	}
+	if req.Sell.Offer.IssuerInfo.Id == "" {
+		return nil, status.Error(codes.InvalidArgument, "offer's issuer id not provided")
+	}
+	if req.Sell.Offer.IssuerInfo.IdentityPubkey == "" {
+		return nil, status.Error(codes.InvalidArgument, "offer's issuer identity pubkey not provided")
+	}
+	if req.Sell.Offer.IssuerInfo.Host == "" {
 		return nil, status.Error(codes.InvalidArgument, "offer's issuer host not provided")
 	}
 
