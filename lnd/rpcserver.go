@@ -176,6 +176,10 @@ var (
 			Entity: "proxy",
 			Action: "write",
 		},
+		{
+			Entity: "proxy",
+			Action: "generate",
+		},
 	}
 
 	// invoicePermissions is a slice of all the entities that allows a user
@@ -497,11 +501,11 @@ func MainRPCServerPermissions() map[string][]bakery.Op {
 		}},
 		"/lnrpc.Lightning/SignTokenPurchase": {{
 			Entity: "proxy",
-			Action: "read",
+			Action: "generate",
 		}},
 		"/lnrpc.Lightning/SignTokenSell": {{
 			Entity: "proxy",
-			Action: "read",
+			Action: "generate",
 		}},
 		"/lnrpc.Lightning/VerifyTokenPurchase": {{
 			Entity: "proxy",
@@ -513,17 +517,21 @@ func MainRPCServerPermissions() map[string][]bakery.Op {
 		}},
 		"/lnrpc.Lightning/RegisterTokenPurchase": {{
 			Entity: "proxy",
-			Action: "read",
+			Action: "write",
 		}},
 		"/lnrpc.Lightning/RegisterTokenSell": {{
 			Entity: "proxy",
-			Action: "read",
+			Action: "write",
 		}},
 		"/lnrpc.Lightning/RegisterTokenHolder": {{
 			Entity: "proxy",
 			Action: "write",
 		}},
 		"/lnrpc.Lightning/AuthTokenHolder": {{
+			Entity: "proxy",
+			Action: "read",
+		}},
+		"/lnrpc.Lightning/RegisterTokenIssuer": {{
 			Entity: "proxy",
 			Action: "write",
 		}},
@@ -7093,6 +7101,20 @@ func (r *rpcServer) RegisterTokenHolder(ctx context.Context, req *replicator.Reg
 	return resp, nil
 }
 
+func (r *rpcServer) RegisterTokenIssuer(ctx context.Context, req *replicator.RegisterRequest) (*empty.Empty, error) {
+	client, closeConn, err := r.connectReplicatorClient(ctx)
+	if err != nil {
+		return nil, errors.WithMessage(err, "connecting client to replication server")
+	}
+	defer closeConn()
+
+	resp, err := client.RegisterTokenIssuer(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("token holder registration: %s", err)
+	}
+	return resp, nil
+}
+
 // TODO: optimize
 // 	? Move replication server client connection to the rpc server initialization stage, to keep connection in a persistent way.
 //	  This could be done in the following manner: connection reopening/closing for a while, after some time of inactivity
@@ -7142,6 +7164,8 @@ func JWTInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServer
 	// TODO: Expend authorize method poll
 	// ? /lnrpc.Lightning/RegisterTokenPurchase
 	// ? /lnrpc.Lightning/VerifyTokenPurchase
+	// ? /lnrpc.Lightning/RegisterTokenSell
+	// ? /lnrpc.Lightning/VerifyTokenSell
 
 	fmt.Println(info.FullMethod)
 

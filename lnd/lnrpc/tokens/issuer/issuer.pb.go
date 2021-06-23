@@ -223,9 +223,11 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type IssuerClient interface {
-	// Returns token purchase signature for further registration along with offer via Replication Server
+	// Returns token purchase signature for further registration along with
+	// offer via Replication Server
 	SignTokenPurchase(ctx context.Context, in *SignTokenPurchaseRequest, opts ...grpc.CallOption) (*SignTokenPurchaseResponse, error)
-	// Returns token sell signature for further registration along with offer via Replication Server
+	// Returns token sell signature for further registration along with offer
+	// via Replication Server
 	SignTokenSell(ctx context.Context, in *SignTokenSellRequest, opts ...grpc.CallOption) (*SignTokenSellResponse, error)
 }
 
@@ -257,9 +259,11 @@ func (c *issuerClient) SignTokenSell(ctx context.Context, in *SignTokenSellReque
 
 // IssuerServer is the server API for Issuer service.
 type IssuerServer interface {
-	// Returns token purchase signature for further registration along with offer via Replication Server
+	// Returns token purchase signature for further registration along with
+	// offer via Replication Server
 	SignTokenPurchase(context.Context, *SignTokenPurchaseRequest) (*SignTokenPurchaseResponse, error)
-	// Returns token sell signature for further registration along with offer via Replication Server
+	// Returns token sell signature for further registration along with offer
+	// via Replication Server
 	SignTokenSell(context.Context, *SignTokenSellRequest) (*SignTokenSellResponse, error)
 }
 

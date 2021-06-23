@@ -36,9 +36,11 @@ service Lightning {
     rpc WalletBalance (WalletBalanceRequest) returns (WalletBalanceResponse);
 
     /* lncli: `getaddressbalances`
-    GetAddressBalances returns the balance for each of the addresses in the wallet.
-     */                                                                                              
-     rpc GetAddressBalances (GetAddressBalancesRequest) returns (GetAddressBalancesResponse);
+    GetAddressBalances returns the balance for each of the addresses in the
+    wallet.
+     */
+    rpc GetAddressBalances (GetAddressBalancesRequest)
+        returns (GetAddressBalancesResponse);
 
     /* lncli: `channelbalance`
     ChannelBalance returns a report on the total funds across all open channels,
@@ -524,49 +526,67 @@ service Lightning {
     rpc ListPermissions (ListPermissionsRequest)
         returns (ListPermissionsResponse);
 
-    
-
-
     // lncli: `gettokenbalances`
-	// Proxies initial request to the replicator for available token offers
-    rpc GetTokenBalances(GetTokenBalancesRequest) returns (replicator.GetTokenBalancesResponse);
+    // Proxies initial request to the replicator for available token offers
+    rpc GetTokenBalances (GetTokenBalancesRequest)
+        returns (replicator.GetTokenBalancesResponse);
 
-	// lncli: `gettokenoffers`
-	// Proxies initial request to the replicator for available issuer token offers
-    rpc GetTokenOffers(replicator.GetTokenOffersRequest) returns (replicator.GetTokenOffersResponse);
+    // lncli: `gettokenoffers`
+    // Proxies initial request to the replicator for available issuer token
+    // offers
+    rpc GetTokenOffers (replicator.GetTokenOffersRequest)
+        returns (replicator.GetTokenOffersResponse);
 
-	// lncli: `signtokenpurchase`
-	// Proxies initial request to the issuer for a signature
-    rpc SignTokenPurchase(issuer.SignTokenPurchaseRequest) returns (issuer.SignTokenPurchaseResponse);
+    // lncli: `signtokenpurchase`
+    // Proxies initial request to the issuer for a signature
+    rpc SignTokenPurchase (issuer.SignTokenPurchaseRequest)
+        returns (issuer.SignTokenPurchaseResponse);
 
     // lncli: `signtokensell`
-	// Proxies initial request to the issuer for a signature
-    rpc SignTokenSell(issuer.SignTokenSellRequest) returns (issuer.SignTokenSellResponse);
+    // Proxies initial request to the issuer for a signature
+    rpc SignTokenSell (issuer.SignTokenSellRequest)
+        returns (issuer.SignTokenSellResponse);
 
-	// lncli: `verifytokenpurchase`
-	// Proxies initial request to the replicator for an issuer's signature verification
-    rpc VerifyTokenPurchase(replicator.VerifyTokenPurchaseRequest) returns (google.protobuf.Empty);
+    // lncli: `verifytokenpurchase`
+    // Proxies initial request to the replicator for an issuer's signature
+    // verification
+    rpc VerifyTokenPurchase (replicator.VerifyTokenPurchaseRequest)
+        returns (google.protobuf.Empty);
 
-	// lncli: `verifytokensell`
-	// Proxies initial request to the replicator for an issuer's signature verification
-    rpc VerifyTokenSell(replicator.VerifyTokenSellRequest) returns (google.protobuf.Empty);
+    // lncli: `verifytokensell`
+    // Proxies initial request to the replicator for an issuer's signature
+    // verification
+    rpc VerifyTokenSell (replicator.VerifyTokenSellRequest)
+        returns (google.protobuf.Empty);
 
-	// lncli: `registertokenpurchase`
-	// Proxies initial request to the replicator for a token purchase registration and further monitoring
-    rpc RegisterTokenPurchase(replicator.RegisterTokenPurchaseRequest) returns (google.protobuf.Empty);
-    
+    // lncli: `registertokenpurchase`
+    // Proxies initial request to the replicator for a token purchase
+    // registration and further monitoring
+    rpc RegisterTokenPurchase (replicator.RegisterTokenPurchaseRequest)
+        returns (google.protobuf.Empty);
+
     // lncli: `registertokensell`
-	// Proxies initial request to the replicator for a token purchase registration and further monitoring
-    rpc RegisterTokenSell(replicator.RegisterTokenSellRequest) returns (google.protobuf.Empty);
+    // Proxies initial request to the replicator for a token purchase
+    // registration and further monitoring
+    rpc RegisterTokenSell (replicator.RegisterTokenSellRequest)
+        returns (google.protobuf.Empty);
 
-	// lncli: `authrokenholder`
+    // lncli: `authrokenholder`
     // Proxies initial request to the replicator for authorize user
-    rpc AuthTokenHolder(replicator.AuthRequest) returns (google.protobuf.Empty);
+    rpc AuthTokenHolder (replicator.AuthRequest)
+        returns (google.protobuf.Empty);
 
-	// lncli: `registertokenholder`
+    // lncli: `registertokenholder`
     // Proxies initial request to the replicator for register user
-    rpc RegisterTokenHolder(replicator.RegisterRequest) returns (google.protobuf.Empty);
-}
+    rpc RegisterTokenHolder (replicator.RegisterRequest)
+        returns (google.protobuf.Empty);
+
+    // lncli: `registertokenissuer`
+    // Proxies initial request to the replicator for register user
+    rpc RegisterTokenIssuer (replicator.RegisterRequest)
+        returns (google.protobuf.Empty);
+
+    }
 
 message Utxo {
     // The type of address
@@ -2273,15 +2293,16 @@ message WalletBalanceResponse {
     int64 unconfirmed_balance = 3;
 }
 
-message GetAddressBalancesRequest {                                                                                                                                                                        
-    // Minimum number of confirmations for coins to be considered received                                                                                                                                 
-    int32 minconf = 1;                                                                                                                                                                                     
-                                                                                                                                                                                                           
-    // If true then addresses which have been created but carry zero balance will be included
+message GetAddressBalancesRequest {
+    // Minimum number of confirmations for coins to be considered received
+    int32 minconf = 1;
+
+    // If true then addresses which have been created but carry zero balance
+    // will be included
     bool showzerobalance = 2;
 }
 
-message GetAddressBalancesResponseAddr{
+message GetAddressBalancesResponseAddr {
     // The address which has this balance
     string address = 1;
 
@@ -2312,7 +2333,7 @@ message GetAddressBalancesResponseAddr{
     // The number of transaction outputs which make up the balance
     int32 outputcount = 10;
 }
-message GetAddressBalancesResponse{
+message GetAddressBalancesResponse {
     repeated GetAddressBalancesResponseAddr addrs = 1;
 }
 

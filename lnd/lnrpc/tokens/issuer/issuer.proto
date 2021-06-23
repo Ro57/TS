@@ -13,11 +13,14 @@ import "tokens/replicator/replicator.proto";
 //  - to test generated client implementation by mocking generated server
 //
 service Issuer {
-    // Returns token purchase signature for further registration along with offer via Replication Server
-    rpc SignTokenPurchase(SignTokenPurchaseRequest) returns (SignTokenPurchaseResponse);
+    // Returns token purchase signature for further registration along with
+    // offer via Replication Server
+    rpc SignTokenPurchase (SignTokenPurchaseRequest)
+        returns (SignTokenPurchaseResponse);
 
-    // Returns token sell signature for further registration along with offer via Replication Server
-    rpc SignTokenSell(SignTokenSellRequest) returns (SignTokenSellResponse);
+    // Returns token sell signature for further registration along with offer
+    // via Replication Server
+    rpc SignTokenSell (SignTokenSellRequest) returns (SignTokenSellResponse);
 }
 
 message SignTokenPurchaseRequest {
