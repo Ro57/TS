@@ -5,6 +5,7 @@ package issuer;
 option go_package = "github.com/pkt-cash/pktd/lnd/lnrpc/tokens/issuer";
 
 import "tokens/replicator/replicator.proto";
+import "google/protobuf/empty.proto";
 
 // Is mainly used to generate compatible querier (client)
 //
@@ -21,6 +22,18 @@ service Issuer {
     // Returns token sell signature for further registration along with offer
     // via Replication Server
     rpc SignTokenSell (SignTokenSellRequest) returns (SignTokenSellResponse);
+
+    // Issue new token with given data. Request data equal to token purchase
+    // data, because it is token offer.
+    rpc IssueToken(IssueTokenRequest) returns (google.protobuf.Empty);
+
+    // Update token inforamtion with given data. Request data equal to token purchase
+    // data, because it is token offer.
+    rpc UpdateToken(UpdateTokenRequest) returns (google.protobuf.Empty);
+
+    // Revoke token - delete information about token by his name.
+    rpc RevokeToken(RevokeTokenRequest) returns (google.protobuf.Empty);
+
 }
 
 message SignTokenPurchaseRequest {
@@ -37,4 +50,16 @@ message SignTokenSellRequest {
 
 message SignTokenSellResponse {
     string issuer_signature = 1;
+}
+
+message IssueTokenRequest {
+    replicator.TokenOffer offer = 1;
+}
+
+message UpdateTokenRequest {
+    replicator.TokenOffer offer = 1;
+}
+
+message RevokeTokenRequest {
+    string token_name = 1;
 }

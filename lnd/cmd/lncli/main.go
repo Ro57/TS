@@ -372,6 +372,9 @@ func main() {
 		registerTokenSellCommand,
 		verifyTokenSellSignatureCommand,
 		registerTokenIssuerCommand,
+		issueTokenCommand,
+		updateTokenCommand,
+		revokeTokenCommand,
 	}
 
 	// Add any extra commands determined by build flags.

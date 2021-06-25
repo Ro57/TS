@@ -535,6 +535,18 @@ func MainRPCServerPermissions() map[string][]bakery.Op {
 			Entity: "proxy",
 			Action: "write",
 		}},
+		"/lnrpc.Lightning/IssueToken": {{
+			Entity: "proxy",
+			Action: "write",
+		}},
+		"/lnrpc.Lightning/UpdateToken": {{
+			Entity: "proxy",
+			Action: "write",
+		}},
+		"/lnrpc.Lightning/RevokeToken": {{
+			Entity: "proxy",
+			Action: "write",
+		}},
 	}
 }
 
@@ -7111,6 +7123,73 @@ func (r *rpcServer) RegisterTokenIssuer(ctx context.Context, req *replicator.Reg
 	resp, err := client.RegisterTokenIssuer(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("token holder registration: %s", err)
+	}
+	return resp, nil
+}
+
+func (r *rpcServer) IssueToken(ctx context.Context, req *issuer.IssueTokenRequest) (*empty.Empty, error) {
+	stopIssuerServerSig := make(chan struct{})
+	{
+		defer close(stopIssuerServerSig)
+
+		issuer_mock.RunServerServing(req.Offer.IssuerInfo.Host, stopIssuerServerSig)
+	}
+
+	client, closeConn, err := r.connectIssuerClient(ctx, req.Offer.IssuerInfo.Host)
+	if err != nil {
+		return nil, errors.WithMessage(err, "connecting client to issuer server")
+	}
+	defer closeConn()
+
+	resp, err := client.IssueToken(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("requesting token sell signature: %s", err)
+	}
+	return resp, nil
+}
+
+func (r *rpcServer) UpdateToken(ctx context.Context, req *issuer.UpdateTokenRequest) (*empty.Empty, error) {
+	stopIssuerServerSig := make(chan struct{})
+	{
+		defer close(stopIssuerServerSig)
+
+		issuer_mock.RunServerServing(req.Offer.IssuerInfo.Host, stopIssuerServerSig)
+	}
+
+	client, closeConn, err := r.connectIssuerClient(ctx, req.Offer.IssuerInfo.Host)
+	if err != nil {
+		return nil, errors.WithMessage(err, "connecting client to issuer server")
+	}
+	defer closeConn()
+
+	resp, err := client.UpdateToken(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("requesting token sell signature: %s", err)
+	}
+	return resp, nil
+}
+
+func (r *rpcServer) RevokeToken(ctx context.Context, req *lnrpc.RevokeTokenRequest) (*empty.Empty, error) {
+	stopIssuerServerSig := make(chan struct{})
+	{
+		defer close(stopIssuerServerSig)
+
+		issuer_mock.RunServerServing(req.IssuerHost, stopIssuerServerSig)
+	}
+
+	client, closeConn, err := r.connectIssuerClient(ctx, req.IssuerHost)
+	if err != nil {
+		return nil, errors.WithMessage(err, "connecting client to issuer server")
+	}
+	defer closeConn()
+
+	revokeReq := &issuer.RevokeTokenRequest{
+		TokenName: req.TokenName,
+	}
+
+	resp, err := client.RevokeToken(ctx, revokeReq)
+	if err != nil {
+		return nil, fmt.Errorf("requesting token sell signature: %s", err)
 	}
 	return resp, nil
 }

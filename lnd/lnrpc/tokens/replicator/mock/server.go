@@ -25,6 +25,13 @@ var (
 	signingKey = []byte("SUPER_SECRET")
 )
 
+type userInfo struct {
+	password string
+	// TODO: implement role system
+	// ? method for add new role to user
+	roles map[string]struct{}
+}
+
 type Server struct {
 	// Nest unimplemented server implementation in order to satisfy server interface
 	replicator.UnimplementedReplicatorServer
@@ -394,10 +401,33 @@ func (s *Server) RegisterTokenSell(ctx context.Context, req *replicator.Register
 func (s *Server) RegisterTokenHolder(ctx context.Context, req *replicator.RegisterRequest) (*empty.Empty, error) {
 	_, ok := users.Load(req.Login)
 	if ok {
-		return nil, status.Error(codes.InvalidArgument, "token holder with this login already exists")
+		return nil, status.Error(codes.InvalidArgument, "user with this login already exists")
 	}
 
-	users.Store(req.Login, req.Password)
+	roles := make(map[string]struct{})
+	roles["holder"] = struct{}{}
+
+	users.Store(req.Login, userInfo{
+		password: req.Password,
+		roles:    roles,
+	})
+
+	return &empty.Empty{}, nil
+}
+
+func (s *Server) RegisterTokenIssuer(ctx context.Context, req *replicator.RegisterRequest) (*empty.Empty, error) {
+	_, ok := users.Load(req.Login)
+	if ok {
+		return nil, status.Error(codes.InvalidArgument, "user with this login already exists")
+	}
+
+	roles := make(map[string]struct{})
+	roles["issuer"] = struct{}{}
+
+	users.Store(req.Login, userInfo{
+		password: req.Password,
+		roles:    roles,
+	})
 
 	return &empty.Empty{}, nil
 }
