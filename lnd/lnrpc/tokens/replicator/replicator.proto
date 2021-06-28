@@ -49,6 +49,10 @@ service Replicator {
 
     // Register new issuer user with passed password and login
     rpc RegisterTokenIssuer (RegisterRequest) returns (google.protobuf.Empty);
+
+    // Verifies a user permitions to issue a token. Returns exceptions if
+    // passed user is not contained in issuer's db
+    rpc VerifyIssuer (VerifyIssuerRequest) returns (google.protobuf.Empty);
 }
 
 message GetTokenOffersRequest {
@@ -173,4 +177,8 @@ message AuthResponse {
 message RegisterRequest {
     string login = 1;
     string password = 2;
+}
+
+message VerifyIssuerRequest {
+    string login = 1;
 }

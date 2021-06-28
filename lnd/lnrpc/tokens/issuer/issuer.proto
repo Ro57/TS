@@ -62,4 +62,5 @@ message UpdateTokenRequest {
 
 message RevokeTokenRequest {
     string token_name = 1;
+    string login = 2;
 }

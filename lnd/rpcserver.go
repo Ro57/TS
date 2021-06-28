@@ -6960,7 +6960,8 @@ func (r *rpcServer) SignTokenPurchase(ctx context.Context, req *issuer.SignToken
 	{
 		defer close(stopIssuerServerSig)
 
-		issuer_mock.RunServerServing(req.Offer.IssuerInfo.Host, stopIssuerServerSig)
+		issuer_mock.RunServerServing(req.Offer.IssuerInfo.Host, r.cfg.ReplicationServerAddress, stopIssuerServerSig)
+
 	}
 
 	client, closeConn, err := r.connectIssuerClient(ctx, req.Offer.IssuerInfo.Host)
@@ -6982,7 +6983,8 @@ func (r *rpcServer) SignTokenSell(ctx context.Context, req *issuer.SignTokenSell
 	{
 		defer close(stopIssuerServerSig)
 
-		issuer_mock.RunServerServing(req.Offer.IssuerInfo.Host, stopIssuerServerSig)
+		issuer_mock.RunServerServing(req.Offer.IssuerInfo.Host, r.cfg.ReplicationServerAddress, stopIssuerServerSig)
+
 	}
 
 	client, closeConn, err := r.connectIssuerClient(ctx, req.Offer.IssuerInfo.Host)
@@ -7132,7 +7134,7 @@ func (r *rpcServer) IssueToken(ctx context.Context, req *issuer.IssueTokenReques
 	{
 		defer close(stopIssuerServerSig)
 
-		issuer_mock.RunServerServing(req.Offer.IssuerInfo.Host, stopIssuerServerSig)
+		issuer_mock.RunServerServing(req.Offer.IssuerInfo.Host, r.cfg.ReplicationServerAddress, stopIssuerServerSig)
 	}
 
 	client, closeConn, err := r.connectIssuerClient(ctx, req.Offer.IssuerInfo.Host)
@@ -7153,7 +7155,7 @@ func (r *rpcServer) UpdateToken(ctx context.Context, req *issuer.UpdateTokenRequ
 	{
 		defer close(stopIssuerServerSig)
 
-		issuer_mock.RunServerServing(req.Offer.IssuerInfo.Host, stopIssuerServerSig)
+		issuer_mock.RunServerServing(req.Offer.IssuerInfo.Host, r.cfg.ReplicationServerAddress, stopIssuerServerSig)
 	}
 
 	client, closeConn, err := r.connectIssuerClient(ctx, req.Offer.IssuerInfo.Host)
@@ -7174,7 +7176,7 @@ func (r *rpcServer) RevokeToken(ctx context.Context, req *lnrpc.RevokeTokenReque
 	{
 		defer close(stopIssuerServerSig)
 
-		issuer_mock.RunServerServing(req.IssuerHost, stopIssuerServerSig)
+		issuer_mock.RunServerServing(req.IssuerHost, r.cfg.ReplicationServerAddress, stopIssuerServerSig)
 	}
 
 	client, closeConn, err := r.connectIssuerClient(ctx, req.IssuerHost)
@@ -7185,6 +7187,7 @@ func (r *rpcServer) RevokeToken(ctx context.Context, req *lnrpc.RevokeTokenReque
 
 	revokeReq := &issuer.RevokeTokenRequest{
 		TokenName: req.TokenName,
+		Login:     req.Login,
 	}
 
 	resp, err := client.RevokeToken(ctx, revokeReq)
@@ -7246,11 +7249,18 @@ func JWTInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServer
 	// ? /lnrpc.Lightning/RegisterTokenSell
 	// ? /lnrpc.Lightning/VerifyTokenSell
 
-	fmt.Println(info.FullMethod)
-
 	switch info.FullMethod {
 	case "/lnrpc.Lightning/GetTokenBalances":
 		getTokenBalancesReq := req.(*lnrpc.GetTokenBalancesRequest)
+		holderLogin = getTokenBalancesReq.Login
+	case "/lnrpc.Lightning/IssueToken":
+		getTokenBalancesReq := req.(*issuer.IssueTokenRequest)
+		holderLogin = getTokenBalancesReq.Offer.TokenHolderLogin
+	case "/lnrpc.Lightning/UpdateToken":
+		getTokenBalancesReq := req.(*issuer.UpdateTokenRequest)
+		holderLogin = getTokenBalancesReq.Offer.TokenHolderLogin
+	case "/lnrpc.Lightning/RevokeToken":
+		getTokenBalancesReq := req.(*lnrpc.RevokeTokenRequest)
 		holderLogin = getTokenBalancesReq.Login
 	default:
 		return handler(ctx, req)

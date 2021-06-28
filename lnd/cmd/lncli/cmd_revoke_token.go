@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkt-cash/pktd/btcutil/er"
 	"github.com/pkt-cash/pktd/lnd/lnrpc"
@@ -58,12 +59,12 @@ func revokeToken(ctx *cli.Context) er.R {
 		IssuerHost: issuerHost,
 	}
 
-	revokeTokenResp, err := client.RevokeToken(context.TODO(), revokeTokenReq)
+	_, err = client.RevokeToken(context.TODO(), revokeTokenReq)
 	if err != nil {
 		return er.Errorf("requesting token revoke: %s", err)
 	}
 
-	printRespJSON(revokeTokenResp)
+	fmt.Println("revoke succesful!")
 
 	return nil
 }

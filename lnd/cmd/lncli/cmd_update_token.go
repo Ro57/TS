@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkt-cash/pktd/btcutil/er"
 	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/issuer"
@@ -32,12 +33,13 @@ func updateToken(ctx *cli.Context) er.R {
 	updateTokenReq := &issuer.UpdateTokenRequest{
 		Offer: offer,
 	}
-	updateTokenResp, err := client.UpdateToken(context.TODO(), updateTokenReq)
+
+	_, err := client.UpdateToken(context.TODO(), updateTokenReq)
 	if err != nil {
 		return er.Errorf("requesting token inforamtion update: %s", err)
 	}
 
-	printRespJSON(updateTokenResp)
+	fmt.Println("update succesful!")
 
 	return nil
 }

@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 // token holders with login password
@@ -421,6 +422,8 @@ func (s *Server) RegisterTokenIssuer(ctx context.Context, req *replicator.Regist
 		return nil, status.Error(codes.InvalidArgument, "user with this login already exists")
 	}
 
+	fmt.Println("Registred login: ", req.Login)
+
 	roles := make(map[string]struct{})
 	roles["issuer"] = struct{}{}
 
@@ -433,13 +436,15 @@ func (s *Server) RegisterTokenIssuer(ctx context.Context, req *replicator.Regist
 }
 
 func (s *Server) AuthTokenHolder(ctx context.Context, req *replicator.AuthRequest) (*replicator.AuthResponse, error) {
+	user, ok := users.Load(req.Login)
 
-	password, ok := users.Load(req.Login)
 	if !ok {
 		return nil, status.Error(codes.InvalidArgument, "token holder not registered")
 	}
 
-	if password != req.Password {
+	ui := user.(userInfo)
+
+	if ui.password != req.Password {
 		return nil, status.Error(codes.InvalidArgument, "invalid password")
 	}
 
@@ -472,6 +477,27 @@ func (s *Server) AuthTokenHolder(ctx context.Context, req *replicator.AuthReques
 		ExpireDate: expire.Unix(),
 	}, nil
 
+}
+func (s *Server) VerifyIssuer(ctx context.Context, req *replicator.VerifyIssuerRequest) (*empty.Empty, error) {
+	fmt.Println("Verify login: ", req.Login)
+
+	if req.Login == "" {
+		return nil, status.Error(codes.InvalidArgument, "user login not presented")
+	}
+
+	user, ok := users.Load(req.Login)
+	if !ok {
+		return nil, status.Error(codes.InvalidArgument, "user with this login does not exist")
+	}
+
+	ui := user.(userInfo)
+
+	_, ok = ui.roles["issuer"]
+	if !ok {
+		return nil, status.Error(codes.InvalidArgument, "this user was not permitted to create new tokens")
+	}
+
+	return &emptypb.Empty{}, nil
 }
 
 type TokenHoldersStoreAPI interface {

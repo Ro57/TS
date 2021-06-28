@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/pkt-cash/pktd/btcutil/er"
@@ -66,12 +67,12 @@ func issueToken(ctx *cli.Context) er.R {
 	issuerTokenReq := &issuer.IssueTokenRequest{
 		Offer: offer,
 	}
-	issueTokenResp, err := client.IssueToken(context.TODO(), issuerTokenReq)
+	_, err := client.IssueToken(context.TODO(), issuerTokenReq)
 	if err != nil {
 		return er.Errorf("requesting token issue: %s", err)
 	}
 
-	printRespJSON(issueTokenResp)
+	fmt.Println("issue succesful!")
 
 	return nil
 }
