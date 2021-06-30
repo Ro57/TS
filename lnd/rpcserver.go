@@ -614,6 +614,10 @@ type rpcServer struct {
 	// allPermissions is a map of all registered gRPC URIs (including
 	// internal and external subservers) to the permissions they require.
 	allPermissions map[string][]bakery.Op
+
+	// replicatorClient is a instance of rpc server connection, started
+	// along with rpc server
+	replicatorClient replicator.ReplicatorClient
 }
 
 // jwtStore in memory storage of all authorized token with user id
@@ -841,25 +845,32 @@ func newRPCServer(
 		serverOpts = append(serverOpts, chainedUnary, chainedStream)
 	}
 
+	// Initialize rpc replicator client
+	replicatorClient, _, connerr := connectReplicatorClient(cfg.ReplicationServerAddress)
+	if connerr != nil {
+		return nil, er.E(errors.WithMessage(connerr, "connecting client to replication server"))
+	}
+
 	// Finally, with all the pre-set up complete,  we can create the main
 	// gRPC server, and register the main lnrpc server along side.
 	grpcServer := grpc.NewServer(serverOpts...)
 	rootRPCServer := &rpcServer{
-		cfg:             cfg,
-		restDialOpts:    restDialOpts,
-		listeners:       listeners,
-		listenerCleanUp: []func(){cleanup},
-		restProxyDest:   restProxyDest,
-		subServers:      subServers,
-		restListen:      restListen,
-		grpcServer:      grpcServer,
-		server:          s,
-		routerBackend:   routerBackend,
-		chanPredicate:   chanPredicate,
-		quit:            make(chan struct{}, 1),
-		macService:      macService,
-		selfNode:        selfNode.PubKeyBytes,
-		allPermissions:  permissions,
+		cfg:              cfg,
+		restDialOpts:     restDialOpts,
+		listeners:        listeners,
+		listenerCleanUp:  []func(){cleanup},
+		restProxyDest:    restProxyDest,
+		subServers:       subServers,
+		restListen:       restListen,
+		grpcServer:       grpcServer,
+		server:           s,
+		routerBackend:    routerBackend,
+		chanPredicate:    chanPredicate,
+		quit:             make(chan struct{}, 1),
+		macService:       macService,
+		selfNode:         selfNode.PubKeyBytes,
+		allPermissions:   permissions,
+		replicatorClient: replicatorClient,
 	}
 	lnrpc.RegisterLightningServer(grpcServer, rootRPCServer)
 
@@ -6940,13 +6951,7 @@ func (r *rpcServer) FundingStateStep0(ctx context.Context,
 
 // Proxies initial request to the Replication Server and returns request result
 func (r *rpcServer) GetTokenOffers(ctx context.Context, req *replicator.GetTokenOffersRequest) (*replicator.GetTokenOffersResponse, error) {
-	client, closeConn, err := r.connectReplicatorClient(ctx)
-	if err != nil {
-		return nil, errors.WithMessage(err, "connecting client to replication server")
-	}
-	defer closeConn()
-
-	resp, err := client.GetTokenOffers(ctx, req)
+	resp, err := r.replicatorClient.GetTokenOffers(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("querying token offers: %s", err)
 	}
@@ -7001,13 +7006,7 @@ func (r *rpcServer) SignTokenSell(ctx context.Context, req *issuer.SignTokenSell
 }
 
 func (r *rpcServer) VerifyTokenPurchase(ctx context.Context, req *replicator.VerifyTokenPurchaseRequest) (*empty.Empty, error) {
-	client, closeConn, err := r.connectReplicatorClient(ctx)
-	if err != nil {
-		return nil, errors.WithMessage(err, "connecting client to replication server")
-	}
-	defer closeConn()
-
-	resp, err := client.VerifyTokenPurchase(ctx, req)
+	resp, err := r.replicatorClient.VerifyTokenPurchase(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("verifying token purchase signature: %s", err)
 	}
@@ -7015,13 +7014,7 @@ func (r *rpcServer) VerifyTokenPurchase(ctx context.Context, req *replicator.Ver
 }
 
 func (r *rpcServer) VerifyTokenSell(ctx context.Context, req *replicator.VerifyTokenSellRequest) (*empty.Empty, error) {
-	client, closeConn, err := r.connectReplicatorClient(ctx)
-	if err != nil {
-		return nil, errors.WithMessage(err, "connecting client to replication server")
-	}
-	defer closeConn()
-
-	resp, err := client.VerifyTokenSell(ctx, req)
+	resp, err := r.replicatorClient.VerifyTokenSell(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("verifying token sell signature: %s", err)
 	}
@@ -7029,13 +7022,7 @@ func (r *rpcServer) VerifyTokenSell(ctx context.Context, req *replicator.VerifyT
 }
 
 func (r *rpcServer) RegisterTokenPurchase(ctx context.Context, req *replicator.RegisterTokenPurchaseRequest) (*empty.Empty, error) {
-	client, closeConn, err := r.connectReplicatorClient(ctx)
-	if err != nil {
-		return nil, errors.WithMessage(err, "connecting client to replication server")
-	}
-	defer closeConn()
-
-	resp, err := client.RegisterTokenPurchase(ctx, req)
+	resp, err := r.replicatorClient.RegisterTokenPurchase(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("registering token purchase: %s", err)
 	}
@@ -7043,13 +7030,7 @@ func (r *rpcServer) RegisterTokenPurchase(ctx context.Context, req *replicator.R
 }
 
 func (r *rpcServer) RegisterTokenSell(ctx context.Context, req *replicator.RegisterTokenSellRequest) (*empty.Empty, error) {
-	client, closeConn, err := r.connectReplicatorClient(ctx)
-	if err != nil {
-		return nil, errors.WithMessage(err, "connecting client to replication server")
-	}
-	defer closeConn()
-
-	resp, err := client.RegisterTokenSell(ctx, req)
+	resp, err := r.replicatorClient.RegisterTokenSell(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("registering token sell: %s", err)
 	}
@@ -7057,17 +7038,11 @@ func (r *rpcServer) RegisterTokenSell(ctx context.Context, req *replicator.Regis
 }
 
 func (r *rpcServer) GetTokenBalances(ctx context.Context, req *lnrpc.GetTokenBalancesRequest) (*replicator.GetTokenBalancesResponse, error) {
-	client, closeConn, err := r.connectReplicatorClient(ctx)
-	if err != nil {
-		return nil, errors.WithMessage(err, "connecting client to replication server")
-	}
-	defer closeConn()
-
 	GetTokenBalancesRequest := &replicator.GetTokenBalancesRequest{
 		Params: req.Params,
 	}
 
-	resp, err := client.GetTokenBalances(ctx, GetTokenBalancesRequest)
+	resp, err := r.replicatorClient.GetTokenBalances(ctx, GetTokenBalancesRequest)
 	if err != nil {
 		return nil, fmt.Errorf("querying token balances: %s", err)
 	}
@@ -7075,12 +7050,7 @@ func (r *rpcServer) GetTokenBalances(ctx context.Context, req *lnrpc.GetTokenBal
 }
 
 func (r *rpcServer) AuthTokenHolder(ctx context.Context, req *replicator.AuthRequest) (*empty.Empty, error) {
-	client, closeConn, err := r.connectReplicatorClient(ctx)
-	if err != nil {
-		return nil, errors.WithMessage(err, "connecting client to replication server")
-	}
-	defer closeConn()
-	resp, err := client.AuthTokenHolder(ctx, req)
+	resp, err := r.replicatorClient.AuthTokenHolder(ctx, req)
 
 	if err != nil {
 		return nil, fmt.Errorf("authentication token holder: %s", err)
@@ -7102,13 +7072,7 @@ func (r *rpcServer) AuthTokenHolder(ctx context.Context, req *replicator.AuthReq
 }
 
 func (r *rpcServer) RegisterTokenHolder(ctx context.Context, req *replicator.RegisterRequest) (*empty.Empty, error) {
-	client, closeConn, err := r.connectReplicatorClient(ctx)
-	if err != nil {
-		return nil, errors.WithMessage(err, "connecting client to replication server")
-	}
-	defer closeConn()
-
-	resp, err := client.RegisterTokenHolder(ctx, req)
+	resp, err := r.replicatorClient.RegisterTokenHolder(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("token holder registration: %s", err)
 	}
@@ -7116,13 +7080,7 @@ func (r *rpcServer) RegisterTokenHolder(ctx context.Context, req *replicator.Reg
 }
 
 func (r *rpcServer) RegisterTokenIssuer(ctx context.Context, req *replicator.RegisterRequest) (*empty.Empty, error) {
-	client, closeConn, err := r.connectReplicatorClient(ctx)
-	if err != nil {
-		return nil, errors.WithMessage(err, "connecting client to replication server")
-	}
-	defer closeConn()
-
-	resp, err := client.RegisterTokenIssuer(ctx, req)
+	resp, err := r.replicatorClient.RegisterTokenIssuer(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("token holder registration: %s", err)
 	}
@@ -7202,16 +7160,16 @@ func (r *rpcServer) RevokeToken(ctx context.Context, req *lnrpc.RevokeTokenReque
 //	  This could be done in the following manner: connection reopening/closing for a while, after some time of inactivity
 // 	? Implement auto reconnects
 // 	? Implement auto disconnects
-func (r *rpcServer) connectReplicatorClient(ctx context.Context) (_ replicator.ReplicatorClient, closeConn func() error, _ error) {
-	if r.cfg.ReplicationServerAddress == "" {
+func connectReplicatorClient(ReplicationServerAddress string) (_ replicator.ReplicatorClient, closeConn func() error, _ error) {
+	if ReplicationServerAddress == "" {
 		return nil, nil, errors.New("empty address")
 	}
 
 	// TODO: research connection option to be secure for protected methods
 	// 	? Use "r.restDialOpts"
 	conn, err := grpc.DialContext(
-		ctx,
-		r.cfg.ReplicationServerAddress,
+		context.TODO(),
+		ReplicationServerAddress,
 		grpc.WithInsecure(),
 	)
 	if err != nil {

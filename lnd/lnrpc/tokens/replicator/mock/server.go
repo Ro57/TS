@@ -460,7 +460,6 @@ func (s *Server) AuthTokenHolder(ctx context.Context, req *replicator.AuthReques
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	// eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MjM5MjI1OTksImlzcyI6IjExMSJ9.eaSaGGyxzOLsGaAcQCQgKUwbwKvh9xy35lef1xF89u8
 
-	// eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MjM5MjI1OTksImlzcyI6IjExMSJ9.eaSaGGyxzOLsGaAcQCQgKUwbwKvh9xy35lef1xF89u8
 	signedToken, err := token.SignedString(signingKey)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -479,8 +478,6 @@ func (s *Server) AuthTokenHolder(ctx context.Context, req *replicator.AuthReques
 
 }
 func (s *Server) VerifyIssuer(ctx context.Context, req *replicator.VerifyIssuerRequest) (*empty.Empty, error) {
-	fmt.Println("Verify login: ", req.Login)
-
 	if req.Login == "" {
 		return nil, status.Error(codes.InvalidArgument, "user login not presented")
 	}
