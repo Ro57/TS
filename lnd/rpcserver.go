@@ -50,7 +50,6 @@ import (
 	"github.com/pkt-cash/pktd/lnd/lnrpc/invoicesrpc"
 	"github.com/pkt-cash/pktd/lnd/lnrpc/routerrpc"
 	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/issuer"
-	issuer_mock "github.com/pkt-cash/pktd/lnd/lnrpc/tokens/issuer/mock"
 	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/jwtstore"
 	"github.com/pkt-cash/pktd/lnd/lnrpc/tokens/replicator"
 
@@ -618,6 +617,10 @@ type rpcServer struct {
 	// replicatorClient is a instance of rpc server connection, started
 	// along with rpc server
 	replicatorClient replicator.ReplicatorClient
+
+	// issuanceClient is a instance of rpc server connection, started
+	// along with rpc server
+	issuanceClient issuer.IssuerClient
 }
 
 // jwtStore in memory storage of all authorized token with user id
@@ -851,6 +854,11 @@ func newRPCServer(
 		return nil, er.E(errors.WithMessage(connerr, "connecting client to replication server"))
 	}
 
+	issuerClient, _, connerr := connectIssuerClient(cfg.IssuenceServerAddress)
+	if connerr != nil {
+		return nil, er.E(errors.WithMessage(connerr, "connecting client to replication server"))
+	}
+
 	// Finally, with all the pre-set up complete,  we can create the main
 	// gRPC server, and register the main lnrpc server along side.
 	grpcServer := grpc.NewServer(serverOpts...)
@@ -871,6 +879,7 @@ func newRPCServer(
 		selfNode:         selfNode.PubKeyBytes,
 		allPermissions:   permissions,
 		replicatorClient: replicatorClient,
+		issuanceClient:   issuerClient,
 	}
 	lnrpc.RegisterLightningServer(grpcServer, rootRPCServer)
 
@@ -6960,22 +6969,7 @@ func (r *rpcServer) GetTokenOffers(ctx context.Context, req *replicator.GetToken
 }
 
 func (r *rpcServer) SignTokenPurchase(ctx context.Context, req *issuer.SignTokenPurchaseRequest) (*issuer.SignTokenPurchaseResponse, error) {
-	// TODO: remove test code
-	stopIssuerServerSig := make(chan struct{})
-	{
-		defer close(stopIssuerServerSig)
-
-		issuer_mock.RunServerServing(req.Offer.IssuerInfo.Host, r.cfg.ReplicationServerAddress, stopIssuerServerSig)
-
-	}
-
-	client, closeConn, err := r.connectIssuerClient(ctx, req.Offer.IssuerInfo.Host)
-	if err != nil {
-		return nil, errors.WithMessage(err, "connecting client to issuer server")
-	}
-	defer closeConn()
-
-	resp, err := client.SignTokenPurchase(ctx, req)
+	resp, err := r.issuanceClient.SignTokenPurchase(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("requesting token purchase signature: %s", err)
 	}
@@ -6983,22 +6977,7 @@ func (r *rpcServer) SignTokenPurchase(ctx context.Context, req *issuer.SignToken
 }
 
 func (r *rpcServer) SignTokenSell(ctx context.Context, req *issuer.SignTokenSellRequest) (*issuer.SignTokenSellResponse, error) {
-	// TODO: remove test code
-	stopIssuerServerSig := make(chan struct{})
-	{
-		defer close(stopIssuerServerSig)
-
-		issuer_mock.RunServerServing(req.Offer.IssuerInfo.Host, r.cfg.ReplicationServerAddress, stopIssuerServerSig)
-
-	}
-
-	client, closeConn, err := r.connectIssuerClient(ctx, req.Offer.IssuerInfo.Host)
-	if err != nil {
-		return nil, errors.WithMessage(err, "connecting client to issuer server")
-	}
-	defer closeConn()
-
-	resp, err := client.SignTokenSell(ctx, req)
+	resp, err := r.issuanceClient.SignTokenSell(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("requesting token sell signature: %s", err)
 	}
@@ -7056,10 +7035,6 @@ func (r *rpcServer) AuthTokenHolder(ctx context.Context, req *replicator.AuthReq
 		return nil, fmt.Errorf("authentication token holder: %s", err)
 	}
 
-	if err != nil {
-		return nil, fmt.Errorf("incorrect expiry date: %s", err.Error())
-	}
-
 	jwt := jwtstore.JWT{
 		HolderLogin: req.Login,
 		Token:       resp.Jwt,
@@ -7088,20 +7063,8 @@ func (r *rpcServer) RegisterTokenIssuer(ctx context.Context, req *replicator.Reg
 }
 
 func (r *rpcServer) IssueToken(ctx context.Context, req *issuer.IssueTokenRequest) (*empty.Empty, error) {
-	stopIssuerServerSig := make(chan struct{})
-	{
-		defer close(stopIssuerServerSig)
 
-		issuer_mock.RunServerServing(req.Offer.IssuerInfo.Host, r.cfg.ReplicationServerAddress, stopIssuerServerSig)
-	}
-
-	client, closeConn, err := r.connectIssuerClient(ctx, req.Offer.IssuerInfo.Host)
-	if err != nil {
-		return nil, errors.WithMessage(err, "connecting client to issuer server")
-	}
-	defer closeConn()
-
-	resp, err := client.IssueToken(ctx, req)
+	resp, err := r.issuanceClient.IssueToken(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("requesting token sell signature: %s", err)
 	}
@@ -7109,20 +7072,8 @@ func (r *rpcServer) IssueToken(ctx context.Context, req *issuer.IssueTokenReques
 }
 
 func (r *rpcServer) UpdateToken(ctx context.Context, req *issuer.UpdateTokenRequest) (*empty.Empty, error) {
-	stopIssuerServerSig := make(chan struct{})
-	{
-		defer close(stopIssuerServerSig)
 
-		issuer_mock.RunServerServing(req.Offer.IssuerInfo.Host, r.cfg.ReplicationServerAddress, stopIssuerServerSig)
-	}
-
-	client, closeConn, err := r.connectIssuerClient(ctx, req.Offer.IssuerInfo.Host)
-	if err != nil {
-		return nil, errors.WithMessage(err, "connecting client to issuer server")
-	}
-	defer closeConn()
-
-	resp, err := client.UpdateToken(ctx, req)
+	resp, err := r.issuanceClient.UpdateToken(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("requesting token sell signature: %s", err)
 	}
@@ -7130,25 +7081,13 @@ func (r *rpcServer) UpdateToken(ctx context.Context, req *issuer.UpdateTokenRequ
 }
 
 func (r *rpcServer) RevokeToken(ctx context.Context, req *lnrpc.RevokeTokenRequest) (*empty.Empty, error) {
-	stopIssuerServerSig := make(chan struct{})
-	{
-		defer close(stopIssuerServerSig)
-
-		issuer_mock.RunServerServing(req.IssuerHost, r.cfg.ReplicationServerAddress, stopIssuerServerSig)
-	}
-
-	client, closeConn, err := r.connectIssuerClient(ctx, req.IssuerHost)
-	if err != nil {
-		return nil, errors.WithMessage(err, "connecting client to issuer server")
-	}
-	defer closeConn()
 
 	revokeReq := &issuer.RevokeTokenRequest{
 		TokenName: req.TokenName,
 		Login:     req.Login,
 	}
 
-	resp, err := client.RevokeToken(ctx, revokeReq)
+	resp, err := r.issuanceClient.RevokeToken(ctx, revokeReq)
 	if err != nil {
 		return nil, fmt.Errorf("requesting token sell signature: %s", err)
 	}
@@ -7183,14 +7122,14 @@ func connectReplicatorClient(ReplicationServerAddress string) (_ replicator.Repl
 //	  This could be done in the following manner: connection reopening/closing for a while, after some time of inactivity
 // 	? Implement auto reconnects
 // 	? Implement auto disconnects
-func (r *rpcServer) connectIssuerClient(ctx context.Context, address string) (_ issuer.IssuerClient, closeConn func() error, _ error) {
+func connectIssuerClient(address string) (_ issuer.IssuerClient, closeConn func() error, _ error) {
 	if address == "" {
 		return nil, nil, errors.New("empty address")
 	}
 
 	// TODO: research connection option to be secure for protected methods
 	// 	? Use "r.restDialOpts"
-	conn, err := grpc.DialContext(ctx, address, grpc.WithInsecure())
+	conn, err := grpc.DialContext(context.TODO(), address, grpc.WithInsecure())
 	if err != nil {
 		return nil, nil, errors.WithMessage(err, "dialing")
 	}

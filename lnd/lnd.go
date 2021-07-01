@@ -45,6 +45,7 @@ import (
 	"github.com/pkt-cash/pktd/lnd/keychain"
 	"github.com/pkt-cash/pktd/lnd/lncfg"
 	"github.com/pkt-cash/pktd/lnd/lnrpc"
+	issuer_mock "github.com/pkt-cash/pktd/lnd/lnrpc/tokens/issuer/mock"
 	replicator_mock "github.com/pkt-cash/pktd/lnd/lnrpc/tokens/replicator/mock"
 	"github.com/pkt-cash/pktd/lnd/lnwallet"
 	"github.com/pkt-cash/pktd/lnd/lnwallet/btcwallet"
@@ -725,9 +726,10 @@ func Main(cfg *Config, lisCfg ListenerCfg, shutdownChan <-chan struct{}) er.R {
 		return getListeners()
 	}
 
-	// TODO: remove test code
+	// TODO: implement error chanel and hadnle that on node close or exception
 	if cfg.Pkt.Active {
 		replicator_mock.RunServerServing(cfg.ReplicationServerAddress, make(<-chan struct{}))
+		issuer_mock.RunServerServing(cfg.IssuenceServerAddress, cfg.ReplicationServerAddress, make(<-chan struct{}))
 	}
 
 	// Initialize, and register our implementation of the gRPC interface
